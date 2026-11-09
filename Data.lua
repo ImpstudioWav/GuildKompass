@@ -1,6 +1,6 @@
 local ADDON, ns = ...
 
-ns.VERSION = "1.22.4"
+ns.VERSION = "1.23.1"
 ns.PREFIX  = "GKompass3"      -- maks 16 tegn (ny fra 1.11: navn uten realm)
 
 -- Raids som addonen kjenner til. (Skjult fra og med 1.4 – beholdt til senere.)
