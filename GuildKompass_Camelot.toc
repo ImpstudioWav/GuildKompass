@@ -1,0 +1,20 @@
+## Interface: 16001
+## Title: |cff33ccffGuildKompass|r
+## Notes: Oversikt over guilden: klasse, spec, level, gear, profesjoner, Battle.net-konto med main/alts, gullbidrag til guild banken, og Death Roll-events.
+## Author: GuildKompass
+## Version: 1.22.4
+## SavedVariables: GuildKompassDB
+## IconTexture: Interface\Icons\INV_Misc_Book_09
+
+Data.lua
+Core.lua
+Comm.lua
+Collect.lua
+Tribute.lua
+UI.lua
+Minimap.lua
+Anim.lua
+DeathRoll.lua
+DeathRollUI.lua
+Raid.lua
+RaidUI.lua

@@ -1,0 +1,152 @@
+GuildKompass 1.12.0 – guild-oversikt + Death Roll-events for WoW: Forever
+========================================================================
+
+INSTALLERING
+1. Lukk spillet og slett eventuell gammel GuildKompass-mappe.
+2. Pakk ut zip-filen og legg mappen "GuildKompass" i AddOns-mappen til
+   WoW: Forever, f.eks.:
+   World of Warcraft\_forever_\Interface\AddOns\
+   (Battle.net → velg Forever → tannhjul → "Vis i utforsker" viser riktig mappe.)
+3. Start spillet og sjekk at GuildKompass er huket av under AddOns.
+   Står den som "Out of date", huk av for "Load out of date AddOns".
+
+ALLE I GUILDEN MÅ HA ADDONEN – det er den som sender dine data til de andre.
+Versjon 1.12 snakker IKKE med eldre versjoner – alle må oppdatere.
+Death Roll er nå en del av GuildKompass (det gamle GuildDeathRoll-addonet skal slettes).
+Logg inn på hver karakter (også alts) minst én gang med addonen på.
+
+BRUK
+  /gk                         åpne/lukke vinduet (eller klikk minimap-knappen)
+  /gk synk                    synk alle data mellom alle som er pålogget (samme som Synk-knappen)
+  /gk reset                   (offiser, test) nullstill alle data for hele guilden
+  /gk logg                    (ved guild banken) vis bankens money log og sammenlign med addonen
+  /gk status                  hvem addonen hører fra, og om alle er synkronisert
+  /gk spec                    vis talentene addonen leser (og send dem på nytt)
+  /gk main <navn>             velg main blant DINE EGNE karakterer
+  /gk main                    tilbake til automatisk main (høyest level)
+  /gk mine                    vis karakterene på Battle.net-kontoen din
+  /gk gull <navn> <beløp>     (offiser) før/korriger bidrag manuelt, f.eks. 25g eller -5g
+  /gk offiserrang <tall>      (guildmaster) rang 0..tall regnes som offiser (standard 1)
+  /gk skala <0.6–1.4>         gjør vinduet mindre/større (f.eks. /gk skala 0.9)
+  /gk minimap                 vis/skjul minimap-knappen
+  /gk event                   åpne Events-fanen (death roll)
+  /gk arena  (eller /dr)      åpne Death Roll-arenaen
+  /dr <navn> <gull> [start]   utfordre noen direkte til 1v1, f.eks. /dr Thrall 10
+  /dr dag <ukedag>            (guildmaster) velg fast event-dag, f.eks. /dr dag onsdag
+  /dr nysesong                (guildmaster) nullstill topplisten for alle
+
+  Vinduet kan dras rundt og husker hvor du satte det. Esc lukker det.
+
+EVENTS OG DEATH ROLL
+  Fanen "Events" i vinduet er samlingsstedet for arrangementer.
+  - Alle kan lage et event med "+ Lag event": velg 1v1 eller turnering,
+    tidspunkt (eller "Nå"), innsats i gull og startverdi.
+  - Alle i guilden ser eventet og kan melde seg på / av.
+  - Den som lagde eventet (eller en offiser) kan avlyse det.
+
+  1v1: meld deg på, åpne arenaen og utfordre en annkommen spiller. Taperen
+  ruller seg nedover (/roll) til noen får 1 og taper innsatsen. Gjeld gjøres
+  opp ved å gi vinneren gullet i en vanlig trade – da merkes det som betalt.
+
+  Turnering (single-elimination bracket, felles pott – vinneren tar alt):
+  - Når nok folk er påmeldt, trykker verten "Start turnering".
+  - Spillerne settes i en bracket (utslagstre). Taper du en kamp, er du ute.
+    Er antallet påmeldte ikke 2/4/8/16, spinnes et lykkehjul som trekker
+    hvem som får stå over første runde (bye).
+  - Det spilles én kamp om gangen. Når det blir din tur, får du beskjed
+    ("Din tur!") og en "Spill kampen"-knapp i Events-fanen. Motstanderen
+    godtar automatisk.
+  - Trykk "Bracket" på eventet for å se hele treet: hvem som har vunnet,
+    hvilken kamp som pågår, og hvem som venter.
+  - Alle legger inn samme innsats i potten, og turneringsvinneren tar hele
+    potten (gjøres opp via trade, som vanlig gjeld).
+  - Topplista viser vunnet/tapt for turnering og 1v1 hver for seg. Toppliste
+    og historikk ser du i arenaen (og en kort toppliste i Events).
+
+SYNK – ALLE SER DET SAMME
+  Endringer sendes til alle med en gang: går du opp i level, skiller i en
+  profesjon, bytter utstyr eller spec, oppdateres det hos alle som er
+  pålogget i løpet av noen sekunder (senest ca. 1 minutt).
+  Når du logger inn, synker addonen automatisk med alle som er pålogget,
+  så du får alt som skjedde mens du var borte (gullbidrag, nye medlemmer osv.).
+  Trykker noen på Synk, oppdaterer ALLE som er pålogget sine egne data og
+  deler alt de har, så alle ender opp med det samme.
+  Store mengder data tar litt tid (Blizzard begrenser addon-meldinger til
+  ca. 1 per sekund). Nederst til høyre står det "Sender data …" mens det pågår.
+
+NULLSTILL (MIDLERTIDIG, FOR TESTING)
+  Offiserer ser knappen "Nullstill (test)" nederst. Den sletter medlemsdata,
+  gullbidrag og bankbeholdning for hele guilden. De som er avlogget blir
+  nullstilt automatisk neste gang de logger inn.
+
+BATTLE.NET-KONTO, MAIN OG ALTS
+  Alle karakterene dine kobles til Battle.net-kontoen din. I Medlemmer- og
+  Profesjoner-fanen står kontonavnet (det før # i BattleTag-en) som en blå overskrift, med
+  karakterene under: main øverst (med krone), så alts etter level.
+  Karakterer uten addon samles i en egen gruppe nederst.
+  Nummeret etter # deles ALDRI med guilden.
+
+  Main er karakteren med høyest level, til du velger selv:
+    - høyreklikk på en av dine karakterer i vinduet, eller
+    - skriv /gk main <navn>
+  Du kan bare velge blant dine egne karakterer. Høyreklikk på mainen
+  igjen for å gå tilbake til automatisk.
+  Huk av "Skjul alts" nederst for å bare se én linje per spiller.
+
+SLIK FUNGERER GULLBIDRAG
+  Gullbidrag hentes fra guild bankens egen MONEY LOG – det samme du ser
+  under "Money Log"-fanen i banken.
+  - Hver gang NOEN med addonen åpner guild banken (du trenger ikke klikke
+    på Money Log-fanen), leser addonen loggen automatisk og sender nye
+    innskudd til ALLE i guilden som er pålogget. De som er avlogget får
+    dem neste gang de logger inn.
+  - Øverst i Gullbidrag-fanen står det hvem som sist oppdaterte og når.
+  - Innskudd fra folk UTEN addon telles også.
+  - Karakteren i loggen kobles til Battle.net-kontoen sin, så bidrag vises
+    per konto (alle karakterene dine samlet). Spillere uten addon vises
+    med karakternavn, merket "(uten addon)".
+  - Legger du inn gull selv, får du en "Takk!"-melding når det er registrert.
+
+  Viktig å vite:
+  - Loggen viser bare de siste ca. 25 transaksjonene. Noen med addonen må
+    åpne banken innimellom, ellers kan eldre innskudd forsvinne ut av loggen
+    før de blir lest.
+  - Den som åpner banken må ha lov til å se Money Log (rangtillatelse).
+  - Loggen har bare omtrentlig tid ("for 3 timer siden"), så tidspunktene
+    vises som "ca.". Samme innskudd lest av flere spillere telles bare én gang.
+  - Den siste lesingen av bankens logg er FASIT: for tidsrommet loggen dekker,
+    viser Gull-logg nøyaktig det samme som bankens Money Log. Eldre innskudd
+    som har rullet ut av loggen, beholdes fra tidligere lesinger.
+  - Offiserer kan føre/korrigere manuelt med /gk gull.
+
+  Guild bankens beholdning vises øverst i Gullbidrag-fanen, sammen med
+  hvor mye som er gått inn og ut denne uka. Gull-logg viser alle bevegelser
+  fra loggen: innskudd (grønn +), og uttak, reparasjoner og kjøp av bankfane
+  (rød –). Bare innskudd teller som gullbidrag.
+
+FANER
+  Medlemmer    – gruppert per Battle.net-konto (main øverst, alts under):
+                 klasse, spec (med ikon for treet med flest poeng), level,
+                 item level, epics, GUILD-RANG (GM i gull, offiserer i blått),
+                 sist online
+  Profesjoner  – gruppert per Battle.net-konto: to hovedprofesjoner +
+                 cooking/first aid/fishing med skill
+  Gullbidrag   – per Battle.net-konto: totalt, denne uka, siste bidrag, antall
+  Gull-logg    – alle bevegelser inn og ut av banken, med ikon per type og
+                 konto (+ karakter)
+  Oppmøte      – hvor aktiv hver spiller er: events påmeldt, dueller spilt,
+                 siste aktivitet, sist online
+  Events       – death roll og turneringer (se egen seksjon over)
+
+ARENAEN (Death Roll)
+  Fanene i arena-vinduet: Arena (spill), Toppliste, Historikk og Rekorder
+  (sesongens rekorder: flest seire, uflakskongen, lengste tapsrekke, mest
+  vunnet/tapt, største gevinst, lengste duell). Størrelsen justeres med
+  slideren øverst eller /dr skala 0.9.
+
+PÅMINNELSER
+  Events med klokkeslett gir en banner ca. 10 min før, og når det starter.
+  Nye events gir også en banner (1v1: "se kampen X mot Y", turnering: "meld
+  deg på"). Alt kan skrus av med avkrysningen i Events-fanen eller /gk varsel.
+
+Hold musa over et navn eller en konto for detaljer.
