@@ -18,3 +18,4 @@ DeathRoll.lua
 DeathRollUI.lua
 Raid.lua
 RaidUI.lua
+VersionCheck.lua
