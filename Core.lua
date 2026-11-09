@@ -733,17 +733,3 @@ f:SetScript("OnEvent", function(self, event, ...)
         ns.OnBankEvent(event, ...)
     end
 end)
-
--- Midlertidig diagnostikk (v1.22.1): fang forbudte/blokkerte handlinger og vis
--- funksjonsnavnet, så vi finner akkurat hva som trigger taint-popupen.
-do
-    local diag = CreateFrame("Frame")
-    diag:RegisterEvent("ADDON_ACTION_FORBIDDEN")
-    diag:RegisterEvent("ADDON_ACTION_BLOCKED")
-    diag:SetScript("OnEvent", function(_, ev, addon, func)
-        if addon == "GuildKompass" then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffff3030[GK-DIAG]|r " .. tostring(ev)
-                .. "  funksjon = |cffffff00" .. tostring(func) .. "|r")
-        end
-    end)
-end
