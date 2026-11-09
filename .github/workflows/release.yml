@@ -1,0 +1,82 @@
+# GuildKompass release workflow.  Lives at  .github/workflows/release.yml  in the addon repo.
+#
+# To publish an update:
+#     git tag v1.24.0
+#     git push origin v1.24.0
+#
+# The tag is the single source of truth for the version. This workflow:
+#   1. stamps it into GuildKompass.toc, GuildKompass_Camelot.toc and ns.VERSION in Data.lua
+#      (so what's in the files can never disagree with the release),
+#   2. zips the addon so the archive's top-level folder is  GuildKompass/,
+#   3. attaches GuildKompass-v1.24.0.zip to a GitHub Release.
+# The updater exe compares the release tag with the installed .toc version; the in-game
+# notice compares the ns.VERSION values that clients send each other.
+#
+# A tag with a suffix (v1.24.0-beta1) is published as a PRE-release, which the updater's
+# "latest release" lookup ignores - handy for testing without pushing it to the whole guild.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  ADDON_NAME: GuildKompass
+  ADDON_DIR: "."                  # where the .toc files live in the repo
+  VERSION_LUA: Data.lua           # file containing:  ns.VERSION = "x.y.z"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stamp version
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::Tag '${GITHUB_REF_NAME}' is not a version like v1.24.0"; exit 1
+          fi
+          export VERSION
+
+          shopt -s nullglob
+          TOCS=("${ADDON_DIR}/${ADDON_NAME}"*.toc)
+          [ ${#TOCS[@]} -gt 0 ] || { echo "::error::no ${ADDON_NAME}*.toc in ${ADDON_DIR}"; exit 1; }
+
+          # [^\r\n]* leaves each file's own line endings (LF or CRLF) untouched
+          for TOC in "${TOCS[@]}"; do
+            perl -pi -e 's/^(##\s*Version\s*:)[^\r\n]*/$1 $ENV{VERSION}/i' "$TOC"
+            grep -q "^## Version: ${VERSION}" "$TOC" || { echo "::error::could not stamp $TOC"; exit 1; }
+          done
+
+          LUA="${ADDON_DIR}/${VERSION_LUA}"
+          perl -pi -e 's/^(ns\.VERSION\s*=\s*)"[^"]*"/$1"$ENV{VERSION}"/' "$LUA"
+          grep -q "^ns\.VERSION *= *\"${VERSION}\"" "$LUA" || { echo "::error::could not stamp $LUA"; exit 1; }
+
+          echo "Stamped ${VERSION} into: ${TOCS[*]} $LUA"
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          mkdir -p "dist/${ADDON_NAME}"
+          tar -C "${ADDON_DIR}" \
+              --exclude=./.git --exclude=./.github --exclude=./.gitignore --exclude=./.gitattributes \
+              --exclude=./dist --exclude='*.md' \
+              -cf - . | tar -C "dist/${ADDON_NAME}" -xf -
+          cd dist
+          zip -r -q "${ADDON_NAME}-${GITHUB_REF_NAME}.zip" "${ADDON_NAME}"
+          unzip -l "${ADDON_NAME}-${GITHUB_REF_NAME}.zip"
+          # sanity: the zip must contain the main .toc inside the addon folder
+          unzip -l "${ADDON_NAME}-${GITHUB_REF_NAME}.zip" | grep -q " ${ADDON_NAME}/${ADDON_NAME}.toc$"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ env.ADDON_NAME }}-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
