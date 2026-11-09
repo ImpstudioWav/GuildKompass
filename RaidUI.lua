@@ -17,7 +17,8 @@ local STATUS_TEXT = {
     declined = RED .. "Avslått|r",
 }
 
-StaticPopupDialogs = StaticPopupDialogs or {}
+-- MERK: aldri tilordne den globale StaticPopupDialogs (det tainter hele
+-- den sikre tabellen -> SpellStopCasting blokkeres ved ESC). Kun index-skriv.
 StaticPopupDialogs["GUILDKOMPASS_RAIDCANCEL"] = {
     text = "Avlyse %s? Alle påmeldinger forsvinner.",
     button1 = "Avlys", button2 = "Behold",
