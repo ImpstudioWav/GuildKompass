@@ -238,8 +238,13 @@ local function Columns(tab)
             { title = "Rang",        w = 96,  text = RankText, sort = RankSort },
             { title = "Main/alt",    w = 88,  text = MainText, sort = function(m) return m.main and 1 or 0 end },
             { title = "Sist online", w = 72,  text = LastOnline, sort = LastOnlineSort },
-            { title = "Addon-data",  w = 92,  text = function(m) return m.rec and Age(m.rec.updated) or (RED .. "Mangler addon|r") end,
-              sort = function(m) return m.rec and -(m.rec.updated or 0) or 1 end },
+            { title = "Versjon",     w = 92,  text = function(m)
+                  if not m.rec then return RED .. "Mangler addon|r" end
+                  local v = m.rec.version
+                  if not v or v == "" then return GREY .. "ukjent|r" end
+                  return ((v == ns.VERSION) and GREEN or YELLOW) .. v .. "|r"
+              end,
+              sort = function(m) return m.rec and (m.rec.version or "") or "" end },
         }
     elseif tab == "profs" then
         return {
