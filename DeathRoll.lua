@@ -568,13 +568,11 @@ Handlers.DRCH = function(from, data)
         end
         d.b = ns.PlayerName()
         if tid then
-            -- Turneringskamp: IKKE auto-godta. Går du inn (ser på kampen) blir du
-            -- automatisk tatt inn siden det er din tur; ellers går du inn manuelt
-            -- via «Spill kampen» på eventet. Ingen auto-timeout på turneringskamper.
+            -- Turneringskamp: godta AUTOMATISK – du er den utpekte motstanderen og
+            -- det er din tur i bracketen. Da slipper begge å trykke, og ingen havner
+            -- i «begge venter på hverandre»-lås. Ingen auto-timeout på turneringskamper.
             C_Timer.After(0.3, function()
-                if d.state == "invite" and ns.Arena and ns.Arena.frame and ns.Arena.frame:IsShown() then
-                    ns.Accept(id)
-                end
+                if d.state == "invite" then ns.Accept(id) end
             end)
         else
             if ns.ShowInvite then ns.ShowInvite(d) end
@@ -1276,37 +1274,107 @@ end
 -- Spill den gjeldende kampen i en turnering. BEGGE spillerne kan starte –
 -- den som trykker først blir utfordrer, den andre godtar automatisk.
 -- Deterministisk id (tid+kampnr) gjør at samtidige trykk ikke lager to dueller.
+-- Send turneringskamp-invitasjonen (bare den kanoniske starteren «a» gjør dette) og
+-- gjenta et par ganger – på WoW Forever kan enkeltmeldinger droppes, og da skal
+-- oppkoblingen likevel gå i orden uten at noen må synke/relogge.
+local function SendTournamentInvite(d)
+    if not d or d.state ~= "invite" then return end
+    ns.Send("DRCH", table.concat({ d.id, clean(d.a), clean(d.b), 0, d.start or 1000,
+            clean(d.tid), d.mi }, ";"), "GUILD")
+    d._invTries = (d._invTries or 0) + 1
+    if d._invTries < 5 then
+        C_Timer.After(3, function()
+            if ns.duels[d.id] == d and d.state == "invite" then SendTournamentInvite(d) end
+        end)
+    end
+end
+
+-- Hvem er den «kanoniske» starteren (a) i en kamp mellom to navn: lavest nøkkel.
+local function CanonAB(n1, n2)
+    if ns.Key(n1) <= ns.Key(n2) then return n1, n2 else return n2, n1 end
+end
+
 function ns.PlayTournamentMatch(tid)
     local t = ns.db and ns.db.tournaments[tid]
     if not t or t.finished then return end
-    local b = ns.ComputeBracket(t.part, t.winners)
-    if b.finished or not b.current then return end
-    local m = b.matches[b.current]
+    local bk = ns.ComputeBracket(t.part, t.winners)
+    if bk.finished or not bk.current then return end
+    local m = bk.matches[bk.current]
     local me = ns.PlayerName()
-    local iAmA = ns.Key(m.a) == ns.Key(me)
-    local iAmB = ns.Key(m.b) == ns.Key(me)
-    if not iAmA and not iAmB then DPrint("Det er ikke din kamp akkurat nå.") return end
-    local opp = iAmA and m.b or m.a
-    local id = H(tid .. "#" .. b.current)
+    if not (ns.Key(m.a) == ns.Key(me) or ns.Key(m.b) == ns.Key(me)) then
+        DPrint("Det er ikke din kamp akkurat nå.") return
+    end
+    local id = H(tid .. "#" .. bk.current)
+    -- Deterministiske roller: begge klienter regner samme a/b, så kampen blir den
+    -- samme uansett hvem som går inn først. a kaster først.
+    local aName, bName = CanonAB(m.a, m.b)
+    local iAmA = ns.Key(me) == ns.Key(aName)
+
     local existing = ns.duels[id]
     if existing and existing.state ~= "cancelled" and existing.state ~= "declined" then
-        -- kampen er allerede startet (av meg eller motstander) – gå (tilbake) inn
+        -- kampen finnes allerede: gå (tilbake) inn, og godta hvis jeg er motstanderen
         if existing.state == "invite" and ns.Key(existing.b) == ns.Key(me) then ns.Accept(id) end
         if ns.OpenArenaOnTournament then ns.OpenArenaOnTournament(tid) end
         ns.DRRefresh()
         return
     end
-    if ns.MyActiveDuel() then DPrint("Du er allerede i en duell.") return end
-    local d = { id = id, a = me, b = opp, amount = 0, start = t.start or 1000, max = t.start or 1000,
-                turn = me, state = "invite", rolls = {}, created = GetTime(), lastAct = GetTime(),
-                tid = tid, mi = b.current }
-    ns.duels[id] = d
-    ns.Send("DRCH", table.concat({ id, clean(me), clean(opp), 0, t.start or 1000, clean(tid), b.current }, ";"), "GUILD")
-    DPrint("Du starter turneringskamp mot " .. ns.Short(opp) .. " – venter på at han kobler seg på …")
-    ns.Sound("IG_PLAYER_INVITE")
+    local busy = ns.MyActiveDuel()
+    if busy and busy.id ~= id then DPrint("Du er allerede i en duell.") return end
+
+    if iAmA then
+        local d = { id = id, a = aName, b = bName, amount = 0, start = t.start or 1000, max = t.start or 1000,
+                    turn = aName, state = "invite", rolls = {}, created = GetTime(), lastAct = GetTime(),
+                    tid = tid, mi = bk.current }
+        ns.duels[id] = d
+        SendTournamentInvite(d)
+        DPrint("Turneringskamp mot " .. ns.Short(bName) .. " – kobler opp …")
+        ns.Sound("IG_PLAYER_INVITE")
+    else
+        -- Jeg er motstanderen (b): be den kanoniske starteren starte kampen. Gjentas
+        -- et par ganger i tilfelle meldingen droppes. Når invitasjonen kommer, godtar
+        -- jeg automatisk (se DRCH-håndtereren).
+        local tries = 0
+        local function poke()
+            if ns.duels[id] then return end          -- invitasjonen har kommet
+            ns.Send("DRTR", table.concat({ id, clean(tid), bk.current }, ";"), "GUILD")
+            tries = tries + 1
+            if tries < 5 then C_Timer.After(3, poke) end
+        end
+        poke()
+        DPrint("Turneringskamp mot " .. ns.Short(aName) .. " – kobler opp …")
+    end
     if ns.OpenArenaOnTournament then ns.OpenArenaOnTournament(tid) end
     ns.DRRefresh()
-    -- Ingen auto-timeout på turneringskamper: motstanderen går inn når det passer.
+    -- Ingen auto-timeout på turneringskamper.
+end
+
+-- «b» ber «a» (kanonisk starter) om å starte turneringskampen – robust mot at
+-- den som skulle invitere ikke har gått inn ennå, eller at en melding ble droppet.
+Handlers.DRTR = function(from, data)
+    local x = split(data, ";")
+    local id, tid, mi = x[1], x[2], tonumber(x[3])
+    if not (id and tid and mi) then return end
+    local t = ns.db and ns.db.tournaments[tid]
+    if not t or t.finished then return end
+    local bk = ns.ComputeBracket(t.part, t.winners)
+    if bk.current ~= mi then return end
+    local m = bk.matches[bk.current]
+    if not m then return end
+    local aName = select(1, CanonAB(m.a, m.b))
+    if ns.Key(ns.PlayerName()) ~= ns.Key(aName) then return end   -- bare den kanoniske starteren svarer
+    local d = ns.duels[id]
+    if d and d.state == "active" then
+        -- allerede i gang: bekreft på nytt så motstanderen henger med
+        ns.Send("DROK", table.concat({ id, clean(d.a), clean(d.b), 0, d.start or 1000 }, ";"), "GUILD")
+        return
+    end
+    if d and d.state == "done" then return end
+    if d and d.state == "invite" and ns.IsMe(d.a) then
+        -- invitasjonen finnes alt: send den på nytt med en gang
+        ns.Send("DRCH", table.concat({ id, clean(d.a), clean(d.b), 0, d.start or 1000, clean(tid), mi }, ";"), "GUILD")
+        return
+    end
+    ns.PlayTournamentMatch(tid)   -- oppretter/sender invitasjonen (a=meg)
 end
 
 ---------------------------------------------------------------------------
