@@ -122,8 +122,8 @@ function A.Coins(parent, count, anchor)
         tex:Show()
         local vx, vy = math.random(-240, 240), math.random(160, 420)
         local spin = (math.random() * 2 - 1) * 8
-        local delay = math.random() * 0.25
-        A.Tween(1.6 + delay, function(p, el)
+        local delay = math.random() * 0.35
+        A.Tween(2.6 + delay, function(p, el)
             local t = math.max(0, el - delay)
             local dx = vx * t
             local dy = vy * t - 520 * t * t
@@ -167,14 +167,15 @@ end
 ---------------------------------------------------------------------------
 -- Svevende tekst (f.eks. "+10g" eller "1!")
 ---------------------------------------------------------------------------
-function A.FloatText(parent, anchor, text, r, g, b)
+function A.FloatText(parent, anchor, text, r, g, b, dur)
     local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
     fs:SetText(text)
     fs:SetTextColor(r or 1, g or 0.82, b or 0)
-    A.Tween(1.6, function(p)
+    -- stiger litt saktere og holder full styrke lenger før den toner ut
+    A.Tween(dur or 1.6, function(p)
         fs:ClearAllPoints()
         fs:SetPoint("CENTER", anchor, "CENTER", 0, 20 + 70 * easeOut(p))
-        fs:SetAlpha(p < 0.5 and 1 or (1 - (p - 0.5) * 2))
+        fs:SetAlpha(p < 0.65 and 1 or (1 - (p - 0.65) / 0.35))
     end, function() fs:Hide() end)
 end
 
