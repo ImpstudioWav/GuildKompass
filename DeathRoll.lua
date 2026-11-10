@@ -143,7 +143,7 @@ function ns.Challenge(target, gold, start)
     if not full then DPrint("Fant ikke '" .. tostring(target) .. "' i guilden.") return end
     if ns.IsMe(full) then DPrint("Du kan ikke invitere deg selv.") return end
     local copper = math.max(0, math.floor(tonumber(gold) or 0))   -- gold-param er ALLEREDE copper
-    start = math.floor(tonumber(start) or 500)
+    start = math.floor(tonumber(start) or 5000)
     if start < 2 then DPrint("Startverdien må være minst 2.") return end
     local me = ns.PlayerName()
     local id = H(me .. GetServerTime() .. math.random(1, 1e6))
@@ -171,7 +171,7 @@ function ns.OpenChallenge(gold, start)
     if not ns.db then DPrint("Du må være i en guild.") return end
     if ns.MyActiveDuel() then DPrint("Du er allerede i en duell.") return end
     local copper = math.max(0, math.floor(tonumber(gold) or 0))   -- gold-param er ALLEREDE copper
-    start = math.floor(tonumber(start) or 500)
+    start = math.floor(tonumber(start) or 5000)
     if start < 2 then DPrint("Startverdien må være minst 2.") return end
     local me = ns.PlayerName()
     local id = H(me .. "open" .. GetServerTime() .. math.random(1, 1e6))
@@ -460,7 +460,7 @@ function ns.CreateEvent(title, whenEpoch, stakeCopper, startVal, note, mode, inv
     local id = H(me .. GetServerTime() .. math.random(1, 1e6))
     invited = invited and invited:gsub("^%s*@?%s*", ""):gsub("%s+$", "") or ""
     local e = { id = id, title = (title ~= "" and title) or "Death Roll", host = me,
-                when = whenEpoch or 0, stake = stakeCopper or 0, start = startVal or 500,
+                when = whenEpoch or 0, stake = stakeCopper or 0, start = startVal or 5000,
                 note = note or "", rev = 1, cancelled = false, created = GetServerTime(), by = me,
                 mode = (mode == "tournament") and "tournament" or "1v1",
                 invited = (invited ~= "") and invited or nil }
