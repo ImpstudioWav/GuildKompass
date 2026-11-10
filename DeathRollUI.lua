@@ -661,10 +661,15 @@ local function BuildCreateDialog()
     local hourHint = Label(f, "(time 0–23)", "GameFontDisableSmall"); hourHint:SetPoint("LEFT", f.hourBox, "RIGHT", 6, 0)
 
     f.stakeLbl = Label(f, "Innsats:"); f.stakeLbl:SetPoint("TOPLEFT", 20, -194)
-    local stakeBox = EditBox(f, 74, false); stakeBox:SetPoint("LEFT", f.stakeLbl, "RIGHT", 10, 0); stakeBox:SetText("10g")
-    f.stakeBox = stakeBox
-    local l4 = Label(f, "Start:"); l4:SetPoint("LEFT", stakeBox, "RIGHT", 16, 0)
-    local startBox = EditBox(f, 56, true); startBox:SetPoint("LEFT", l4, "RIGHT", 8, 0); startBox:SetText("1000")
+    -- Tre egne tallfelt så ingen blander enhetene (100 kobber = 1 silver, 100 silver = 1 gull).
+    f.goldBox = EditBox(f, 34, true); f.goldBox:SetPoint("LEFT", f.stakeLbl, "RIGHT", 10, 0); f.goldBox:SetText("10")
+    Label(f, "|cffffd700g|r"):SetPoint("LEFT", f.goldBox, "RIGHT", 2, 0)
+    f.silverBox = EditBox(f, 34, true); f.silverBox:SetPoint("LEFT", f.goldBox, "RIGHT", 18, 0); f.silverBox:SetText("0")
+    Label(f, "|cffc7c7c7s|r"):SetPoint("LEFT", f.silverBox, "RIGHT", 2, 0)
+    f.copperBox = EditBox(f, 34, true); f.copperBox:SetPoint("LEFT", f.silverBox, "RIGHT", 18, 0); f.copperBox:SetText("0")
+    Label(f, "|cffcd7f32k|r"):SetPoint("LEFT", f.copperBox, "RIGHT", 2, 0)
+    local l4 = Label(f, "Start:"); l4:SetPoint("LEFT", f.copperBox, "RIGHT", 22, 0)
+    local startBox = EditBox(f, 48, true); startBox:SetPoint("LEFT", l4, "RIGHT", 8, 0); startBox:SetText("1000")
     f.startBox = startBox
 
     local l5 = Label(f, "Notat:"); l5:SetPoint("TOPLEFT", 20, -226)
@@ -701,7 +706,10 @@ local function BuildCreateDialog()
             local hour = math.max(0, math.min(23, tonumber(f.hourBox:GetText()) or 20))
             whenEpoch = NextWeekday(f.selectedDay, hour)   -- selectedDay 1..7 = søn..lør = date wday
         end
-        local stake = ns.ParseMoney(f.stakeBox:GetText()) or 0
+        local g = math.max(0, math.floor(tonumber(f.goldBox:GetText()) or 0))
+        local s = math.max(0, math.floor(tonumber(f.silverBox:GetText()) or 0))
+        local c = math.max(0, math.floor(tonumber(f.copperBox:GetText()) or 0))
+        local stake = g * 10000 + s * 100 + c
         local invited = (f.mode == "1v1") and (f.inviteBox:GetText() or ""):gsub("^%s*@?%s*", ""):gsub("%s+$", "") or nil
         ns.CreateEvent(f.titleBox:GetText(), whenEpoch, stake, startVal, f.noteBox:GetText(), f.mode, invited)
         f:Hide()
