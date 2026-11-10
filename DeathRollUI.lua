@@ -669,7 +669,7 @@ local function BuildCreateDialog()
     f.copperBox = EditBox(f, 34, true); f.copperBox:SetPoint("LEFT", f.silverBox, "RIGHT", 18, 0); f.copperBox:SetText("0")
     Label(f, "|cffcd7f32k|r"):SetPoint("LEFT", f.copperBox, "RIGHT", 2, 0)
     local l4 = Label(f, "Start:"); l4:SetPoint("LEFT", f.copperBox, "RIGHT", 22, 0)
-    local startBox = EditBox(f, 48, true); startBox:SetPoint("LEFT", l4, "RIGHT", 8, 0); startBox:SetText("500")
+    local startBox = EditBox(f, 48, true); startBox:SetPoint("LEFT", l4, "RIGHT", 8, 0); startBox:SetText("5000")
     f.startBox = startBox
 
     local l5 = Label(f, "Notat:"); l5:SetPoint("TOPLEFT", 20, -226)
@@ -700,7 +700,7 @@ local function BuildCreateDialog()
 
     local make = Button(f, "|cff55ff55Lag event|r", 120, 24); make:SetPoint("BOTTOMLEFT", 24, 18)
     make:SetScript("OnClick", function()
-        local startVal = math.max(2, tonumber(f.startBox:GetText()) or 500)
+        local startVal = math.max(2, tonumber(f.startBox:GetText()) or 5000)
         local whenEpoch = 0
         if f.selectedDay ~= 0 then
             local hour = math.max(0, math.min(23, tonumber(f.hourBox:GetText()) or 20))
