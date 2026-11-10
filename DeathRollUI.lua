@@ -353,7 +353,7 @@ end
 function Arena:CurrentDuel()
     local function live(x)
         return x and (x.state == "invite" or x.state == "active" or x.state == "open"
-            or (x.state == "done" and GetTime() - (x.lastAct or 0) < 25))
+            or (x.state == "done" and GetTime() - (x.lastAct or 0) < 45))
     end
     -- det eksplisitt valgte rommet har forrang (så man kan se på en bestemt kamp)
     local d = self.selectedDuelId and ns.duels[self.selectedDuelId]
@@ -480,7 +480,7 @@ function ns.OnRoll(d, who, value, max)
     p.holdNumber = true
     p.roll:Hide()
     p.num:SetTextColor(1, 0.82, 0)
-    A.Spin(p.num, max, value, value <= 1 and 1.9 or 1.2, function()
+    A.Spin(p.num, max, value, value <= 1 and 2.8 or 1.8, function()
         p.holdNumber = false
         A.Pop(p.numFrame, value <= 1 and 2.6 or 1.7)
         if value <= 1 then
@@ -513,11 +513,11 @@ function Arena:FinishVisuals(d)
     A.Skull(p.stage, losePlate, 90)
     A.Coins(p.stage, d.amount > 0 and 30 or 14, winPlate)
     A.Pop(winPlate, 1.4)
-    if d.amount > 0 then A.FloatText(p.stage, winPlate, "+" .. math.floor(d.amount / 10000) .. "g", 1, 0.82, 0) end
+    if d.amount > 0 then A.FloatText(p.stage, winPlate, "+" .. ns.MoneyText(d.amount), 1, 0.82, 0, 4.5) end
     if ns.IsMe(d.winner) then
-        ns.Sound("LOOT_WINDOW_COIN_SOUND"); A.FloatText(p.stage, p.numFrame, "VINNER!", 0.3, 1, 0.3)
+        ns.Sound("LOOT_WINDOW_COIN_SOUND"); A.FloatText(p.stage, p.numFrame, "VINNER!", 0.3, 1, 0.3, 4.5)
     elseif ns.IsMe(d.loser) then
-        ns.Sound("RAID_WARNING"); A.FloatText(p.stage, p.numFrame, "DØD!", 1, 0.2, 0.2)
+        ns.Sound("RAID_WARNING"); A.FloatText(p.stage, p.numFrame, "DØD!", 1, 0.2, 0.2, 4.5)
     end
     self:Update()
 end
@@ -669,7 +669,7 @@ local function BuildCreateDialog()
     f.copperBox = EditBox(f, 34, true); f.copperBox:SetPoint("LEFT", f.silverBox, "RIGHT", 18, 0); f.copperBox:SetText("0")
     Label(f, "|cffcd7f32k|r"):SetPoint("LEFT", f.copperBox, "RIGHT", 2, 0)
     local l4 = Label(f, "Start:"); l4:SetPoint("LEFT", f.copperBox, "RIGHT", 22, 0)
-    local startBox = EditBox(f, 48, true); startBox:SetPoint("LEFT", l4, "RIGHT", 8, 0); startBox:SetText("1000")
+    local startBox = EditBox(f, 48, true); startBox:SetPoint("LEFT", l4, "RIGHT", 8, 0); startBox:SetText("500")
     f.startBox = startBox
 
     local l5 = Label(f, "Notat:"); l5:SetPoint("TOPLEFT", 20, -226)
@@ -700,7 +700,7 @@ local function BuildCreateDialog()
 
     local make = Button(f, "|cff55ff55Lag event|r", 120, 24); make:SetPoint("BOTTOMLEFT", 24, 18)
     make:SetScript("OnClick", function()
-        local startVal = math.max(2, tonumber(f.startBox:GetText()) or 1000)
+        local startVal = math.max(2, tonumber(f.startBox:GetText()) or 500)
         local whenEpoch = 0
         if f.selectedDay ~= 0 then
             local hour = math.max(0, math.min(23, tonumber(f.hourBox:GetText()) or 20))
