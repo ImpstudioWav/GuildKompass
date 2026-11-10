@@ -981,8 +981,8 @@ function ns.UpdateEventsPanel()
                     card.open:SetText("|cff55ff55Start turnering|r")
                     card.open:SetEnabled(canManage and cnt >= 2)
                     card.open:SetScript("OnClick", function()
-                        StaticPopup_Show("GUILDKOMPASS_TSTART", nil, nil,
-                            { eventId = e.id, copper = e.stake or 0 })
+                        -- buy-in ble satt da turneringen ble laget; ikke spør på nytt
+                        ns.StartTournament(e.id, e.stake or 0)
                     end)
                 else
                     card.open:SetText("Arena"); card.open:SetEnabled(true)
