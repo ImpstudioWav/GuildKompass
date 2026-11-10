@@ -131,18 +131,10 @@ function ns.ActiveDuels()
     return out
 end
 
--- gold kan være et tall (hele gull) ELLER en streng som "10g50s"/"50s"
-local function ParseStake(gold)
-    local copper
-    if type(gold) == "string" and not tonumber(gold) then
-        copper = ns.ParseMoney(gold) or 0
-    else
-        copper = math.floor(tonumber(gold) or 0) * 10000
-    end
-    if copper < 0 then copper = 0 end
-    return copper
-end
-
+-- MERK: innsats sendes ALLTID i copper til Challenge/OpenChallenge. Tidligere ble
+-- et tall her omregnet som gull (×10000) – men CreateEvent sender copper, så det ga
+-- dobbel omregning (10 silver ble til 1000 gull). Nå tar funksjonene copper direkte,
+-- og slash-kommandoen konverterer sin streng med ns.ParseMoney før kallet.
 function ns.Challenge(target, gold, start)
     if not ns.db then DPrint("Du må være i en guild.") return end
     if ns.MyActiveDuel() then DPrint("Du er allerede i en duell.") return end
@@ -150,7 +142,7 @@ function ns.Challenge(target, gold, start)
     local full = ns.FindMember(target)
     if not full then DPrint("Fant ikke '" .. tostring(target) .. "' i guilden.") return end
     if ns.IsMe(full) then DPrint("Du kan ikke invitere deg selv.") return end
-    local copper = ParseStake(gold)
+    local copper = math.max(0, math.floor(tonumber(gold) or 0))   -- gold-param er ALLEREDE copper
     start = math.floor(tonumber(start) or 1000)
     if start < 2 then DPrint("Startverdien må være minst 2.") return end
     local me = ns.PlayerName()
@@ -178,7 +170,7 @@ end
 function ns.OpenChallenge(gold, start)
     if not ns.db then DPrint("Du må være i en guild.") return end
     if ns.MyActiveDuel() then DPrint("Du er allerede i en duell.") return end
-    local copper = ParseStake(gold)
+    local copper = math.max(0, math.floor(tonumber(gold) or 0))   -- gold-param er ALLEREDE copper
     start = math.floor(tonumber(start) or 1000)
     if start < 2 then DPrint("Startverdien må være minst 2.") return end
     local me = ns.PlayerName()
@@ -1452,7 +1444,8 @@ function ns.HandleDeathRollSlash(msg)
     end
     local name, gold, start = msg:match("^(.-)%s+(%d+)%s*(%d*)$")
     if name and name ~= "" then
-        ns.Challenge(name, gold, start ~= "" and start or nil)
+        -- slash: tallet er hele gull (f.eks. /dr Thrall 10 = 10 gull) → copper
+        ns.Challenge(name, (tonumber(gold) or 0) * 10000, start ~= "" and start or nil)
         return
     end
     if ns.Arena then ns.Arena:Toggle() end
