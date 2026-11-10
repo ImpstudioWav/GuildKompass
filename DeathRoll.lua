@@ -1168,7 +1168,7 @@ function ns.StartTournament(eventId, buyInCopper)
         return
     end
     local part = ns.SignupList(eventId)
-    if #part < 2 then DPrint("Det må være minst 2 påmeldte for å starte.") return end
+    if #part < 3 then DPrint("Dere må være minst 3 påmeldte for å starte en turnering (dere er " .. #part .. ").") return end
     for i = #part, 2, -1 do local j = math.random(1, i); part[i], part[j] = part[j], part[i] end
     local stake = buyInCopper or e.stake or 0
     if stake < 0 then stake = 0 end
