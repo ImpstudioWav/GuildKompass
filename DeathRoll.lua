@@ -143,7 +143,7 @@ function ns.Challenge(target, gold, start)
     if not full then DPrint("Fant ikke '" .. tostring(target) .. "' i guilden.") return end
     if ns.IsMe(full) then DPrint("Du kan ikke invitere deg selv.") return end
     local copper = math.max(0, math.floor(tonumber(gold) or 0))   -- gold-param er ALLEREDE copper
-    start = math.floor(tonumber(start) or 1000)
+    start = math.floor(tonumber(start) or 500)
     if start < 2 then DPrint("Startverdien må være minst 2.") return end
     local me = ns.PlayerName()
     local id = H(me .. GetServerTime() .. math.random(1, 1e6))
@@ -171,7 +171,7 @@ function ns.OpenChallenge(gold, start)
     if not ns.db then DPrint("Du må være i en guild.") return end
     if ns.MyActiveDuel() then DPrint("Du er allerede i en duell.") return end
     local copper = math.max(0, math.floor(tonumber(gold) or 0))   -- gold-param er ALLEREDE copper
-    start = math.floor(tonumber(start) or 1000)
+    start = math.floor(tonumber(start) or 500)
     if start < 2 then DPrint("Startverdien må være minst 2.") return end
     local me = ns.PlayerName()
     local id = H(me .. "open" .. GetServerTime() .. math.random(1, 1e6))
@@ -287,6 +287,18 @@ function ns.Finish(d, loser)
                 ns.Short(d.winner), ns.FormatMoney(d.amount)))
         end
         -- (Ingen annonsering i guild chat – holdes lokalt i addonet.)
+    end
+    -- Auto-fjern det tilknyttede 1v1-eventet når kampen er ferdig: verten kringkaster
+    -- fjerningen til hele guilden (persistent + synket, så det forsvinner for alle og
+    -- ikke dukker opp igjen etter reload). Resultatet ligger i topplista, og selve
+    -- kampvinduet viser vinneren videre. Turneringer ryddes når hele turneringen er ferdig.
+    if d.eventId and not d.tid and ns.db and ns.db.events[d.eventId] then
+        local e = ns.db.events[d.eventId]
+        if not e.cancelled and ns.IsMe(e.host) then
+            e.cancelled = true
+            e.rev = (e.rev or 1) + 1
+            ns.Send("EVNEW", ns.EncodeEvent(e), "GUILD")
+        end
     end
     if ns.OnFinish then ns.OnFinish(d) end
     ns.DRRefresh()
@@ -409,22 +421,22 @@ function ns.EventList()
     local now = GetServerTime()
     for _, e in pairs(ns.db.events) do
         local past = e.when and e.when > 0 and now > e.when + 3 * 3600
-        -- ferdig turnering: vis vinneren i 10 min, så forsvinner eventet
+        -- ferdig turnering: kort visning av vinneren, så forsvinner eventet automatisk
         local doneT = false
         if e.tid then
             local t = ns.db.tournaments[e.tid]
             if t and t.finished then
                 local fa = t.finishedAt
-                doneT = (not fa) or (now > fa + 600)
+                doneT = (not fa) or (now > fa + 15)
             end
         end
-        -- 1v1-event: vis vinneren i 10 min etter at duellen er ferdig, så forsvinn
+        -- 1v1-event: vis vinneren kort etter at duellen er ferdig, så forsvinn automatisk
         if e.duelId then
             local d = ns.duels and ns.duels[e.duelId]
             if d then
                 if d.state == "done" then
                     local fa = d.doneAt or 0
-                    if fa == 0 or now > fa + 600 then doneT = true end
+                    if fa == 0 or now > fa + 15 then doneT = true end
                 elseif d.state == "declined" or d.state == "cancelled" then
                     doneT = true
                 end
@@ -448,7 +460,7 @@ function ns.CreateEvent(title, whenEpoch, stakeCopper, startVal, note, mode, inv
     local id = H(me .. GetServerTime() .. math.random(1, 1e6))
     invited = invited and invited:gsub("^%s*@?%s*", ""):gsub("%s+$", "") or ""
     local e = { id = id, title = (title ~= "" and title) or "Death Roll", host = me,
-                when = whenEpoch or 0, stake = stakeCopper or 0, start = startVal or 1000,
+                when = whenEpoch or 0, stake = stakeCopper or 0, start = startVal or 500,
                 note = note or "", rev = 1, cancelled = false, created = GetServerTime(), by = me,
                 mode = (mode == "tournament") and "tournament" or "1v1",
                 invited = (invited ~= "") and invited or nil }
@@ -682,6 +694,14 @@ Handlers.DRRS = function(from, data)
         if r then
             ns.drCovered[r.id] = true
             if ns.StoreResult(r) then changed = true end
+            -- marker duellen ferdig hos ALLE som får resultatet, så det tilknyttede
+            -- event-kortet forsvinner for hele guilden (ikke bare for de to spillerne)
+            local d = ns.duels[r.id]
+            if d and d.state ~= "done" then
+                d.state = "done"; d.winner = r.winner; d.loser = r.loser
+                d.doneAt = r.t or GetServerTime(); d.lastAct = GetTime()
+                changed = true
+            end
             if r.tid and ns.TournamentOnResult then
                 if ns.TournamentOnResult(r) then changed = true end
             end
