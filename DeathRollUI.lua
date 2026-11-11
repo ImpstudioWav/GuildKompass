@@ -494,8 +494,19 @@ function ns.OnRoll(d, who, value, max)
             local fd = p.pendingFinish; p.pendingFinish = nil
             Arena:FinishVisuals(fd)
         end
+        -- siste rull er ferdig: slipp evt. utsatt turneringsvinner-annonsering
+        if d.tid and ns.FlushTourReveal then ns.FlushTourReveal(d.tid) end
         Arena:Update()
     end)
+end
+
+-- Sant hvis arenaen akkurat nå animerer en rull for en kamp i denne turneringen
+-- (brukes til å vente med vinner-annonsering til siste kast er ferdig).
+function Arena:IsAnimatingTournament(tid)
+    if not (self.frame and self.frame:IsShown()) then return false end
+    local d = self:CurrentDuel()
+    if not d or d.tid ~= tid then return false end
+    return (self.arena and (self.arena.holdNumber or self.arena.pendingFinish)) and true or false
 end
 
 function ns.OnFinish(d)
@@ -853,7 +864,14 @@ function ns.UpdateEventsPanel()
             card.title:SetText(YELLOW .. (e.title ~= "" and e.title or "Death Roll") .. "|r  " .. typeTag
                 .. GREY .. "  · vert " .. ns.Short(e.host) .. "|r")
 
-            if t and t.finished then
+            if t and t.finished and ns.tourRevealGate == t.tid then
+                -- siste kamp ruller fortsatt: ikke avslør vinneren på fanen før kastet er ferdig
+                card.when:SetText(YELLOW .. "Siste kamp|r")
+                card.info:SetText(GREY .. "Siste kamp pågår … vinneren kåres straks|r")
+                card.signups:SetText(GREY .. #t.part .. " deltakere|r")
+                card.join:Hide(); card.open:Hide(); card.cancel:Hide()
+
+            elseif t and t.finished then
                 card.when:SetText(GREEN .. "Ferdig|r")
                 local pot = (t.stake or 0) * math.max(0, #t.part)
                 card.info:SetText("|T" .. TEX_SKULL .. ":12|t Vinner: " .. Colored(t.champion or "?")
@@ -1068,7 +1086,9 @@ function ns.ShowBracket(tid)
     local b = ns.ComputeBracket(t.part, t.winners)
     local nR = #b.rounds
     f.title:SetText("|cffffd100Turnering – bracket|r")
-    if b.finished and b.champion then
+    if ns.tourRevealGate == tid then
+        f.sub:SetText(GREY .. "Siste kamp pågår … vinneren kåres straks|r")
+    elseif b.finished and b.champion then
         f.sub:SetText("|T" .. TEX_CROWN .. ":16|t  Vinner: " .. Colored(b.champion))
     elseif b.current and b.matches[b.current] then
         local m = b.matches[b.current]
