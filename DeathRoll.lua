@@ -427,7 +427,7 @@ function ns.EventList()
             local t = ns.db.tournaments[e.tid]
             if t and t.finished then
                 local fa = t.finishedAt
-                doneT = (not fa) or (now > fa + 15)
+                doneT = (not fa) or (now > fa + 30)
             end
         end
         -- 1v1-event: vis vinneren kort etter at duellen er ferdig, så forsvinn automatisk
@@ -1238,8 +1238,9 @@ function ns.TournamentOnResult(r)
     return true
 end
 
-function ns.OnTournamentFinished(t, fromSync)
-    t.finishedAt = t.finishedAt or GetServerTime()
+-- Selve annonseringen (chat, banner, pott-oppgjør). Skilt ut så den kan vente til
+-- siste rull-animasjon er ferdig, slik at vinneren ikke spoiles før siste kast.
+local function DoTournamentReveal(t)
     DPrint("|cffffd100Turnering ferdig!|r Vinner: " .. ns.Short(t.champion or "?")
         .. ((t.stake or 0) > 0 and (" – potten er " .. ns.FormatMoney((t.stake or 0) * math.max(0, #t.part)) .. "!") or "") .. "")
     ns.Sound("RAID_WARNING")
@@ -1266,6 +1267,30 @@ function ns.OnTournamentFinished(t, fromSync)
         -- (Ingen annonsering i guild chat.)
     end
     ns.DRRefresh()
+end
+
+function ns.OnTournamentFinished(t, fromSync)
+    t.finishedAt = t.finishedAt or GetServerTime()
+    -- Ser vi akkurat nå siste kamp rulle i arenaen? Da venter vi med å annonsere
+    -- vinneren (banner + fane) til rull-animasjonen er ferdig, så det ikke spoiles.
+    if ns.Arena and ns.Arena.IsAnimatingTournament and ns.Arena:IsAnimatingTournament(t.tid) then
+        ns.tourRevealGate = t.tid
+        ns.tourRevealFn = function() DoTournamentReveal(t) end
+        -- sikkerhetsnett om animasjons-callbacken skulle utebli
+        if C_Timer then C_Timer.After(5, function() ns.FlushTourReveal(t.tid) end) end
+        if ns.DRRefresh then ns.DRRefresh() end   -- viser "siste kamp pågår" i mellomtiden
+        return
+    end
+    DoTournamentReveal(t)
+end
+
+-- Kalt fra UI når siste rull-animasjon er ferdig: slipp den utsatte annonseringen.
+function ns.FlushTourReveal(tid)
+    if ns.tourRevealGate == tid and ns.tourRevealFn then
+        local fn = ns.tourRevealFn
+        ns.tourRevealGate, ns.tourRevealFn = nil, nil
+        fn()
+    end
 end
 
 -- Hent den aktive turneringen for et event (hvis noen)
