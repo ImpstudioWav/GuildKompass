@@ -165,17 +165,33 @@ function ns.Epoch()
     return (ns.db and ns.db.epoch and ns.db.epoch.t) or 0
 end
 
+-- Tidskritiske meldinger (utfordring, godta/avslå, terningkast, events) skal ikke
+-- stå i kø bak en stor synk – ellers kan en 1v1-utfordring bli liggende i minutter
+-- mens mottakeren ikke ser noe. De legges FORAN vanlige synk-meldinger, men bak
+-- andre prioriterte, så rekkefølgen mellom dem bevares.
+local PRIORITY = {
+    DRCH = true, DROP = true, DRJN = true, DRAC = true, DRDE = true, DRCA = true,
+    DROK = true, DRTR = true, DRRO = true, EVNEW = true, EVSIGN = true, TNEW = true,
+}
+
 function ns.Send(kind, payload, channel, target)
     payload = payload or ""
     msgId = (msgId % 9999) + 1
     local ep = ns.Epoch()
     local n = math.max(1, math.ceil(#payload / CHUNK))
+    local prio = PRIORITY[kind] or false
+    local pos = #queue + 1
+    if prio then
+        pos = 1
+        while queue[pos] and queue[pos].prio do pos = pos + 1 end
+    end
     for i = 1, n do
         local part = payload:sub((i - 1) * CHUNK + 1, i * CHUNK)
-        queue[#queue + 1] = {
+        table.insert(queue, pos, {
             msg = kind .. "^" .. msgId .. "^" .. i .. "^" .. n .. "^" .. ep .. "^" .. part,
-            channel = channel, target = target,
-        }
+            channel = channel, target = target, prio = prio,
+        })
+        pos = pos + 1
     end
     if not sender:IsShown() then Refill(); sender:Show() end
 end

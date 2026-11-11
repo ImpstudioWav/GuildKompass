@@ -5,6 +5,8 @@ local ADDON, ns = ...
 -- har egne typer (DR*, EV*) og slipper forbi nullstillings-sperren i Comm.lua.
 
 local INVITE_TIMEOUT = 60
+local CHALLENGE_RESEND = { 5, 12, 25 }   -- sekunder etter utfordringen: send på nytt hvis ingen har svart
+local NOREPLY_AFTER = 20                 -- sekunder uten svar før utfordreren får beskjed
 
 ns.duels   = ns.duels or {}        -- id -> aktiv/nylig duell
 ns.drSeen  = ns.drSeen or {}       -- kast sett i systemmeldinger (verifisering)
@@ -151,11 +153,29 @@ function ns.Challenge(target, gold, start)
                 state = "invite", rolls = {}, created = GetTime(), lastAct = GetTime() }
     ns.duels[id] = d
     if ns.Arena then ns.Arena.selectedDuelId = id end
-    ns.Send("DRCH", table.concat({ id, clean(me), clean(full), d.amount, start }, ";"), "GUILD")
+    local payload = table.concat({ id, clean(me), clean(full), d.amount, start }, ";")
+    ns.Send("DRCH", payload, "GUILD")
     DPrint(string.format("Du utfordret %s til Death Roll om %s (start %d). Venter på svar …",
         ns.Short(full), ns.FormatMoney(d.amount), start))
     ns.Sound("IG_PLAYER_INVITE")
     ns.DRRefresh()
+    -- Én enkelt melding kan forsvinne (WoW: Forever dropper av og til addon-meldinger),
+    -- og uten svar står begge og venter. Send utfordringen på nytt mens ingen har svart;
+    -- mottakeren ignorerer duplikater (se Handlers.DRCH). Etter en stund får utfordreren
+    -- beskjed om at ingen har svart, i stedet for å se «Venter …» i det uendelige.
+    for _, sec in ipairs(CHALLENGE_RESEND) do
+        C_Timer.After(sec, function()
+            if d.state == "invite" and ns.duels[id] == d then ns.Send("DRCH", payload, "GUILD") end
+        end)
+    end
+    C_Timer.After(NOREPLY_AFTER, function()
+        if d.state == "invite" and ns.duels[id] == d then
+            d.noReply = true
+            DPrint(string.format("Ingen respons fra %s ennå. Er hen pålogget og har GuildKompass i nyeste versjon? "
+                .. "Be hen skrive /gk status (eller prøv /gk test).", ns.Short(full)))
+            ns.DRRefresh()
+        end
+    end)
     C_Timer.After(INVITE_TIMEOUT, function()
         if d.state == "invite" and not d.noTimeout then
             d.state = "cancelled"
@@ -550,6 +570,20 @@ Handlers.DRCH = function(from, data)
     local tid = (x[6] and x[6] ~= "") and x[6] or nil
     local mi = tonumber(x[7]) or nil
     if ns.Key(a) ~= ns.Key(from) then return end
+    -- Samme utfordring kommer flere ganger (utfordreren sender på nytt hvis første melding
+    -- forsvant). Aldri start en kamp på nytt: en duplikat skal ikke sette en pågående
+    -- eller avgjort duell tilbake til «invitasjon». Men svar igjen på det jeg allerede
+    -- har svart, i tilfelle svaret mitt var den meldingen som forsvant.
+    if not tid then
+        local old = ns.duels[id]
+        if old then
+            if ns.IsMe(old.b) and ns.Key(old.a) == ns.Key(from) then
+                if old.state == "active" then ns.Send("DRAC", id, "GUILD")
+                elseif old.state == "declined" then ns.Send("DRDE", id, "GUILD") end
+            end
+            return
+        end
+    end
     -- Turneringskamp: hvis begge trykket «Spill kampen» samtidig har jeg kanskje
     -- en egen utgående invitasjon med samme id. Da vinner den "kanoniske" starteren
     -- (lavest navn), så begge ender opp med samme kamp (a=kanonisk, b=den andre).

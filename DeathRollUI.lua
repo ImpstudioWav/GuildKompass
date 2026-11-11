@@ -419,7 +419,9 @@ function Arena:UpdateArena()
                 and (YELLOW .. "Åpen 1v1 – venter på motstander …|r")
                 or (Colored(d.a) .. " har åpnet en 1v1 – bli med!"))
         elseif d.state == "invite" then
-            p.status:SetText(ns.IsMe(d.a) and ("Venter på at " .. Colored(d.b) .. " godtar …")
+            p.status:SetText(ns.IsMe(d.a)
+                and (d.noReply and (YELLOW .. "Ingen respons fra |r" .. Colored(d.b) .. YELLOW .. " ennå – pålogget med GuildKompass?|r")
+                    or ("Venter på at " .. Colored(d.b) .. " godtar …"))
                 or (Colored(d.a) .. " utfordrer " .. Colored(d.b) .. " …"))
         elseif myTurn then
             p.status:SetText(YELLOW .. "DIN TUR!|r")
@@ -939,7 +941,7 @@ function ns.UpdateEventsPanel()
                     card.when:SetText(YELLOW .. "Åpen – venter|r")
                     card.info:SetText(Colored(d.a) .. GREY .. " vs (hvem som helst)|r")
                 elseif st == "invite" then
-                    card.when:SetText(YELLOW .. "Venter på svar|r")
+                    card.when:SetText(YELLOW .. (d.noReply and "Ingen respons ennå|r" or "Venter på svar|r"))
                     card.info:SetText(Colored(d.a) .. GREY .. " vs |r" .. (d.b and Colored(d.b) or (GREY .. "?|r")))
                 else
                     card.when:SetText(YELLOW .. "Pågår|r")
