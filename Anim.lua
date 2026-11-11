@@ -246,12 +246,12 @@ function A.Banner(title, sub)
     banner:Show()
     ns.Sound("RAID_WARNING")
     A.StartPulse(banner.title, 0.55, 1, 4)
-    A.Tween(6.5, function(p, el)
+    A.Tween(10, function(p, el)
         local y
         if el < 0.6 then y = 140 - 260 * easeOut(el / 0.6) else y = -120 end
         banner:ClearAllPoints()
         banner:SetPoint("TOP", UIParent, "TOP", 0, y)
-        if el > 5.6 then banner:SetAlpha(math.max(0, 1 - (el - 5.6) / 0.9)) end
+        if el > 9.1 then banner:SetAlpha(math.max(0, 1 - (el - 9.1) / 0.9)) end
     end, function()
         A.StopPulse(banner.title)
         banner:Hide()
