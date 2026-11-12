@@ -589,6 +589,23 @@ function ns.BuildQuestsPanel(parent, anchor)
         card.barText:SetPoint("CENTER")
         card.barText:SetShadowColor(0, 0, 0, 1); card.barText:SetShadowOffset(1, -1)
 
+        -- GM-kontroller for manuelle mål (f.eks. "Samle 100 gull"). Bare
+        -- guildmaster ser og bruker disse; auto-mål (level) har dem ikke.
+        local function ctl(text, w, delta)
+            local b = PButton(card, text, w, 18)
+            b:SetScript("OnClick", function() if card.goalId then ns.GQ_AddProgress(card.goalId, delta) end end)
+            return b
+        end
+        local m10 = ctl("|cffff8080-10|r", 32, -10)
+        local m1  = ctl("|cffff8080-1|r", 28, -1)
+        local p1  = ctl("|cff80ff80+1|r", 28, 1)
+        local p10 = ctl("|cff80ff80+10|r", 32, 10)
+        m10:SetPoint("BOTTOMLEFT", 10, 8)
+        m1:SetPoint("LEFT", m10, "RIGHT", 3, 0)
+        p1:SetPoint("LEFT", m1, "RIGHT", 3, 0)
+        p10:SetPoint("LEFT", p1, "RIGHT", 3, 0)
+        card.progBtns = { m10, m1, p1, p10 }
+
         -- liten merkelapp for auto-mål
         card.autoTag = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         card.autoTag:SetPoint("BOTTOMLEFT", 10, 11)
@@ -673,6 +690,7 @@ function ns.UpdateQuestsPanel()
                 end
                 card.autoTag:SetText("|cffffcf80Prestasjon|r " .. PURPLE .. "+" .. (goal.xp or 0) .. " XP til guilden|r")
                 card.autoTag:Show()
+                for _, b in ipairs(card.progBtns) do b:Hide() end
             else
                 local pct = goal.target > 0 and math.floor((cur / goal.target) * 100 + 0.5) or 0
                 card.amount:SetText(PURPLE .. "+" .. ns.GQ_GoalXP(goal) .. " XP|r")
@@ -682,6 +700,9 @@ function ns.UpdateQuestsPanel()
                 card.barText:SetText(cur .. " / " .. goal.target .. " " .. (goal.unit or "") .. "  (" .. pct .. "%)")
                 card.autoTag:SetText("|cff80c0ffAuto – teller level|r")
                 card.autoTag:SetShown(isLevel)
+                -- bare guildmaster kan justere manuelle mål (ikke auto-level)
+                local gmManual = (not isLevel) and ns.IsGM and ns.IsGM(ns.PlayerName())
+                for _, b in ipairs(card.progBtns) do b:SetShown(gmManual) end
             end
             card:Show()
         else
