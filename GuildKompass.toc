@@ -2,7 +2,7 @@
 ## Title: |cff33ccffGuildKompass|r
 ## Notes: Oversikt over guilden: klasse, spec, level, gear, profesjoner, Battle.net-konto med main/alts, gullbidrag til guild banken, og Death Roll-events.
 ## Author: GuildKompass
-## Version: 1.23.1
+## Version: 1.25.1
 ## SavedVariables: GuildKompassDB
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
 
