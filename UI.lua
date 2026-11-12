@@ -768,6 +768,7 @@ end
 function UI:SelectTab(index)
     currentTab = TABS[index].id
     self.frame.selectedTab = index
+    if self.lvlInfoPanel then self.lvlInfoPanel:Hide() end
     if self.panelTabs and PanelTemplates_SetTab then
         PanelTemplates_SetTab(self.frame, index)
     else
@@ -852,6 +853,35 @@ function UI:Create()
     gxbar:SetStatusBarColor(0.64, 0.19, 0.85)
     gxbar:SetMinMaxValues(0, 1); gxbar:SetValue(0)
     self.guildXpBar = gxbar
+
+    -- Liten "?"-knapp ved siden av guild-nivået: viser hva som skjer på hvert nivå
+    local lvlInfo = CreateFrame("Button", nil, f, BACKDROP_TPL)
+    lvlInfo:SetSize(15, 15)
+    lvlInfo:SetPoint("LEFT", self.guildLvl, "RIGHT", 5, 0)
+    SetBD(lvlInfo, "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border", 7, 2)
+    if lvlInfo.SetBackdropColor then lvlInfo:SetBackdropColor(0.1, 0.1, 0.16, 0.95); lvlInfo:SetBackdropBorderColor(0.55, 0.4, 0.75, 1) end
+    lvlInfo:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    local qmark = lvlInfo:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    qmark:SetPoint("CENTER", 0, 0); qmark:SetText("?"); qmark:SetTextColor(0.85, 0.75, 1)
+    self.lvlInfoBtn = lvlInfo
+
+    -- Panel med liste over hva som skjer på hvert guild-nivå
+    local info = CreateFrame("Frame", nil, f, BACKDROP_TPL)
+    info:SetFrameStrata("DIALOG")
+    info:SetPoint("TOP", lvlInfo, "BOTTOM", 0, -4)
+    info:SetSize(230, 60)
+    SetBD(info, "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border", 14, 4)
+    if info.SetBackdropColor then info:SetBackdropColor(0, 0, 0, 0.96); info:SetBackdropBorderColor(0.55, 0.4, 0.75, 1) end
+    info:EnableMouse(true)
+    info:Hide()
+    info.title = info:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    info.title:SetPoint("TOPLEFT", 12, -10)
+    info.title:SetText("|cffc0a0ffGuild-nivåer|r")
+    info.rows = {}
+    self.lvlInfoPanel = info
+    lvlInfo:SetScript("OnClick", function()
+        if info:IsShown() then info:Hide() else UI:FillLevelInfo(); info:Show() end
+    end)
 
     local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", -6, -6)
@@ -1133,6 +1163,37 @@ end
 function UI:Toggle()
     self:Create()
     if self.frame:IsShown() then self.frame:Hide() else self.frame:Show() end
+end
+
+-- Fyll "Guild-nivåer"-panelet med listen fra GuildQuests (markerer nåværende nivå)
+function UI:FillLevelInfo()
+    local info = self.lvlInfoPanel
+    if not info then return end
+    local curLvl = (ns.GQ_GuildXP and select(1, ns.GQ_GuildXP())) or 1
+    local list = ns.GQ_LEVEL_INFO or {}
+    local y = -34
+    for i, entry in ipairs(list) do
+        local row = info.rows[i]
+        if not row then
+            row = info:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            row:SetPoint("TOPLEFT", 14, 0)
+            row:SetPoint("RIGHT", info, "RIGHT", -12, 0)
+            row:SetJustifyH("LEFT")
+            info.rows[i] = row
+        end
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", 14, y)
+        row:SetPoint("RIGHT", info, "RIGHT", -12, 0)
+        local reached = curLvl >= entry.level
+        local hereTag = (curLvl == entry.level) and "  |cff80ff80(her nå)|r" or ""
+        local lvlCol  = reached and "|cffffd100" or "|cff808080"
+        local txtCol  = reached and "|cffffffff" or "|cffb0b0b0"
+        row:SetText(lvlCol .. "Nivå " .. entry.level .. ":|r " .. txtCol .. entry.text .. "|r" .. hereTag)
+        row:Show()
+        y = y - 18
+    end
+    for i = #list + 1, #info.rows do info.rows[i]:Hide() end
+    info:SetHeight(math.max(50, 34 + #list * 18 + 10))
 end
 
 function UI:Update()

@@ -155,6 +155,15 @@ function ns.GQ_GuildXP()
     return level, into, need, total, count
 end
 
+-- Hva som låses opp / skjer på hvert guild-nivå. Lett å utvide: legg til
+-- flere rader her, så dukker de automatisk opp i info-lista på Medlemmer.
+ns.GQ_LEVEL_INFO = {
+    { level = 2, text = "Bygging av casino" },
+    { level = 3, text = "Mer info kommer" },
+    { level = 4, text = "Mer info kommer" },
+    { level = 5, text = "Mer info kommer" },
+}
+
 local shownLevel, gqReady
 -- Felles feiring (banner + mynt-regn + lyd). Brukes ved fullført mål og av testknappen.
 function ns.GQ_Celebrate(sub)
