@@ -461,22 +461,6 @@ function ns.BuildQuestsPanel(parent, anchor)
     panel:Hide()
     qpanel = panel
 
-    local create = PButton(panel, "|cff55ff55+ Nytt mål|r", 120, 24)
-    create:SetPoint("TOPRIGHT", -6, -6)
-    create:SetScript("OnClick", function() StaticPopup_Show("GUILDKOMPASS_GQ_NEW") end)
-    panel.create = create
-
-    local clevel = PButton(panel, "|cff80c0ff+ Level-mål|r", 120, 24)
-    clevel:SetPoint("RIGHT", create, "LEFT", -6, 0)
-    clevel:SetScript("OnClick", function() StaticPopup_Show("GUILDKOMPASS_GQ_LEVEL") end)
-    panel.clevel = clevel
-
-    -- Midlertidig test-knapp: spill av feiringen (banner + lyd) lokalt
-    local test = PButton(panel, "|cffffd100Test: HURRA|r", 110, 24)
-    test:SetPoint("RIGHT", clevel, "LEFT", -6, 0)
-    test:SetScript("OnClick", function() ns.GQ_Celebrate("Test – slik høres/ser det ut!") end)
-    panel.testBtn = test
-
     -- Guild-nivå + XP-bar øverst
     panel.glevel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     panel.glevel:SetPoint("TOPLEFT", 10, -10)
@@ -596,24 +580,6 @@ function ns.BuildQuestsPanel(parent, anchor)
         card.barText:SetPoint("CENTER")
         card.barText:SetShadowColor(0, 0, 0, 1); card.barText:SetShadowOffset(1, -1)
 
-        -- Offiser-kontroller (kompakt)
-        local function ctl(text, w, onClick)
-            local b = PButton(card, text, w, 18)
-            b:SetScript("OnClick", function() onClick(card.goalId) end)
-            return b
-        end
-        local m10  = ctl("|cffff8080-10|r", 32, function(id) ns.GQ_AddProgress(id, -10) end)
-        local m1   = ctl("|cffff8080-1|r", 28, function(id) ns.GQ_AddProgress(id, -1) end)
-        local p1   = ctl("|cff80ff80+1|r", 28, function(id) ns.GQ_AddProgress(id, 1) end)
-        local p10  = ctl("|cff80ff80+10|r", 32, function(id) ns.GQ_AddProgress(id, 10) end)
-        local delb = ctl("|cffff6060Slett|r", 48, function(id) ns.GQ_Delete(id) end)
-        m10:SetPoint("BOTTOMLEFT", 10, 8)
-        m1:SetPoint("LEFT", m10, "RIGHT", 3, 0)
-        p1:SetPoint("LEFT", m1, "RIGHT", 3, 0)
-        p10:SetPoint("LEFT", p1, "RIGHT", 3, 0)
-        delb:SetPoint("BOTTOMRIGHT", -10, 8)
-        card.progBtns = { m10, m1, p1, p10 }      -- bare manuelle mål
-        card.delBtn = delb
         -- liten merkelapp for auto-mål
         card.autoTag = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         card.autoTag:SetPoint("BOTTOMLEFT", 10, 11)
@@ -630,8 +596,6 @@ function ns.UpdateQuestsPanel()
     if not qpanel or not qpanel:IsShown() then return end
     local edit = canEdit()
     local goalsMode = (qpanel.mode ~= "ach")
-    qpanel.create:SetShown(edit and goalsMode)
-    if qpanel.clevel then qpanel.clevel:SetShown(edit and goalsMode) end
     for key, b in pairs(qpanel.modeBtns) do
         if key == qpanel.mode then b:LockHighlight() else b:UnlockHighlight() end
     end
@@ -698,8 +662,6 @@ function ns.UpdateQuestsPanel()
                     local leader = ns.GQ_AchLeader and ns.GQ_AchLeader(goal.achId)
                     card.barText:SetText(leader and (GREY .. "Leder: |r" .. WHITE .. leader .. "|r") or (GREY .. "Ingen på vei ennå|r"))
                 end
-                for _, b in ipairs(card.progBtns) do b:Hide() end
-                card.delBtn:Hide()
                 card.autoTag:SetText("|cffffcf80Prestasjon|r " .. PURPLE .. "+" .. (goal.xp or 0) .. " XP til guilden|r")
                 card.autoTag:Show()
             else
@@ -709,8 +671,6 @@ function ns.UpdateQuestsPanel()
                 card.bar:SetValue(cur)
                 if done then card.bar:SetStatusBarColor(0.3, 1, 0.3) else card.bar:SetStatusBarColor(1, 0.82, 0) end
                 card.barText:SetText(cur .. " / " .. goal.target .. " " .. (goal.unit or "") .. "  (" .. pct .. "%)")
-                for _, b in ipairs(card.progBtns) do b:SetShown(edit and not isLevel) end
-                card.delBtn:SetShown(edit)
                 card.autoTag:SetText("|cff80c0ffAuto – teller level|r")
                 card.autoTag:SetShown(isLevel)
             end
