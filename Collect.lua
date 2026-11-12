@@ -74,6 +74,25 @@ function ns.CollectProfessions()
             end
         end
     end
+    -- Lockpicking og Poisons er klasse-skills (ikke i GetProfessions) – hent dem
+    -- direkte, så prestasjonene kan spore dem for hele guilden.
+    if GetNumSkillLines and GetSkillLineInfo then
+        if ExpandSkillHeader then pcall(ExpandSkillHeader, 0) end   -- utvid alle headere først
+        local have = {}
+        for _, p in ipairs(out) do have[p[1]] = true end
+        local ok, n = pcall(GetNumSkillLines)
+        if ok and n then
+            for i = 1, n do
+                local name, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
+                if name and not isHeader and not have[name]
+                   and (name == "Lockpicking" or name == "Poisons" or name == "Lock Picking")
+                   and (rank or 0) > 0 then
+                    out[#out + 1] = { (name == "Lock Picking") and "Lockpicking" or name, rank or 0, maxRank or 0 }
+                    have[name] = true
+                end
+            end
+        end
+    end
     table.sort(out, function(a, b)
         local pa = ns.PROFESSIONS[a[1]] ~= "secondary"
         local pb = ns.PROFESSIONS[b[1]] ~= "secondary"

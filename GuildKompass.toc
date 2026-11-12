@@ -19,3 +19,4 @@ DeathRollUI.lua
 Raid.lua
 RaidUI.lua
 VersionCheck.lua
+GuildQuests.lua

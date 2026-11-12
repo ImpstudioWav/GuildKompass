@@ -257,3 +257,49 @@ function A.Banner(title, sub)
         banner:Hide()
     end)
 end
+
+---------------------------------------------------------------------------
+-- Festlig feiring (ingen hodeskaller!) – fyrverkeri, gull/grønt, mynt-regn
+---------------------------------------------------------------------------
+local cheer
+function A.Cheer(title, sub)
+    if not cheer then
+        local tpl = BackdropTemplateMixin and "BackdropTemplate" or nil
+        cheer = CreateFrame("Frame", "GuildKompassCheer", UIParent, tpl)
+        cheer:SetSize(540, 100)
+        cheer:SetFrameStrata("FULLSCREEN_DIALOG")
+        if cheer.SetBackdrop then
+            cheer:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+                edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 32, edgeSize = 32,
+                insets = { left = 11, right = 12, top = 12, bottom = 11 } })
+        end
+        local l = cheer:CreateTexture(nil, "ARTWORK")
+        l:SetTexture("Interface\\Icons\\INV_Misc_Firework_01")
+        l:SetSize(54, 54); l:SetPoint("LEFT", 20, 0)
+        local r = cheer:CreateTexture(nil, "ARTWORK")
+        r:SetTexture("Interface\\Icons\\INV_Misc_Firework_01")
+        r:SetSize(54, 54); r:SetPoint("RIGHT", -20, 0)
+        cheer.title = cheer:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+        cheer.title:SetPoint("TOP", 0, -24)
+        cheer.title:SetTextColor(1, 0.82, 0)                 -- gull
+        cheer.sub = cheer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        cheer.sub:SetPoint("TOP", cheer.title, "BOTTOM", 0, -8)
+        cheer.sub:SetTextColor(0.5, 1, 0.5)                  -- grønn
+    end
+    cheer.title:SetText(title)
+    cheer.sub:SetText(sub or "")
+    cheer:SetAlpha(1); cheer:Show()
+    if ns.Sound then ns.Sound("LEVELUP") end                -- festlig fanfare
+    A.StartPulse(cheer.title, 0.6, 1, 5)
+    A.Tween(7, function(p, el)
+        local y
+        if el < 0.6 then y = 150 - 270 * easeOut(el / 0.6) else y = -120 end
+        cheer:ClearAllPoints()
+        cheer:SetPoint("TOP", UIParent, "TOP", 0, y)
+        if el > 6.1 then cheer:SetAlpha(math.max(0, 1 - (el - 6.1) / 0.9)) end
+    end, function()
+        A.StopPulse(cheer.title)
+        cheer:Hide()
+    end)
+    A.Coins(UIParent, 36)                                   -- gull-regn over skjermen
+end

@@ -18,6 +18,7 @@ local MAX_COLS = 10
 local TABS = {
     { id = "overview", label = "Medlemmer" },
     { id = "profs",    label = "Profesjoner" },
+    { id = "quests",   label = "Guild Quests" },
     { id = "gold",     label = "Gullbidrag" },
     { id = "log",      label = "Gull-logg" },
     { id = "raid",     label = "Raid" },
@@ -32,6 +33,7 @@ local sortState = {
     log      = { col = 1, asc = false },
     raid     = { col = 1, asc = true },
     events   = { col = 1, asc = true },
+    quests   = { col = 1, asc = true },
 }
 local searchText = ""
 local onlyAddon = false
@@ -59,6 +61,8 @@ local PROF_ICONS = {
     ["Cooking"]        = "Interface\\Icons\\INV_Misc_Food_15",
     ["First Aid"]      = "Interface\\Icons\\Spell_Holy_SealOfSacrifice",
     ["Fishing"]        = "Interface\\Icons\\Trade_Fishing",
+    ["Lockpicking"]    = "Interface\\Icons\\INV_Misc_Key_03",
+    ["Poisons"]        = "Interface\\Icons\\Trade_BrewPoison",
 }
 
 local function Tex(path, size)
@@ -194,6 +198,8 @@ local function HeaderText(g)
         return GREY .. "Uten addon / ukjent konto|r" .. GREY .. "   ·   " .. g.count .. " karakterer|r"
     end
     local s = BNET_BLUE .. g.short .. "|r"
+    local title = ns.GQ_AchTitleOf and ns.GQ_AchTitleOf(g.key)
+    if title then s = s .. "  |cffffd100«" .. title .. "»|r" end
     if g.mine then s = s .. GREY .. " (deg)|r" end
     s = s .. GREY .. "   ·   " .. g.count .. (g.count == 1 and " karakter" or " karakterer") .. "|r"
     return s
@@ -248,18 +254,20 @@ local function Columns(tab)
         }
     elseif tab == "profs" then
         return {
-            { title = "Battle.net  /  Karakter", w = 200, big = true, text = ChildNameText, sort = function(m) return m.short end },
-            { title = "Lvl",         w = 36,  text = function(m) return m.level or "?" end, sort = function(m) return m.level or 0 end },
-            { title = "Profesjon 1", w = 170, text = function(m) return ProfText(GetProf(m.rec, 1), true) end,
+            { title = "Battle.net  /  Karakter", w = 186, big = true, text = ChildNameText, sort = function(m) return m.short end },
+            { title = "Lvl",         w = 34,  text = function(m) return m.level or "?" end, sort = function(m) return m.level or 0 end },
+            { title = "Profesjon 1", w = 152, text = function(m) return ProfText(GetProf(m.rec, 1), true) end,
               sort = function(m) local p = GetProf(m.rec, 1) return p and p[1] or "~" end },
-            { title = "Profesjon 2", w = 170, text = function(m) return ProfText(GetProf(m.rec, 2), true) end,
+            { title = "Profesjon 2", w = 152, text = function(m) return ProfText(GetProf(m.rec, 2), true) end,
               sort = function(m) local p = GetProf(m.rec, 2) return p and p[1] or "~" end },
-            { title = "Cooking",     w = 90,  text = function(m) return ProfText(GetProf(m.rec, "Cooking")) end,
+            { title = "Cooking",     w = 78,  text = function(m) return ProfText(GetProf(m.rec, "Cooking")) end,
               sort = function(m) local p = GetProf(m.rec, "Cooking") return p and -p[2] or 1 end },
-            { title = "First Aid",   w = 90,  text = function(m) return ProfText(GetProf(m.rec, "First Aid")) end,
+            { title = "First Aid",   w = 78,  text = function(m) return ProfText(GetProf(m.rec, "First Aid")) end,
               sort = function(m) local p = GetProf(m.rec, "First Aid") return p and -p[2] or 1 end },
-            { title = "Fishing",     w = 90,  text = function(m) return ProfText(GetProf(m.rec, "Fishing")) end,
+            { title = "Fishing",     w = 78,  text = function(m) return ProfText(GetProf(m.rec, "Fishing")) end,
               sort = function(m) local p = GetProf(m.rec, "Fishing") return p and -p[2] or 1 end },
+            { title = "Lockpicking", w = 86,  text = function(m) return ProfText(GetProf(m.rec, "Lockpicking")) end,
+              sort = function(m) local p = GetProf(m.rec, "Lockpicking") return p and -p[2] or 1 end },
         }
     elseif tab == "gold" then
         return {
@@ -595,22 +603,10 @@ end
 local function InfoText()
     if not ns.db then return RED .. "Du er ikke i en guild.|r" end
     local SEP = GREY .. "   ·   |r"
-    if currentTab == "overview" or currentTab == "profs" then
-        local total, online, withAddon, accounts, seen = 0, 0, 0, 0, {}
-        for full, r in pairs(ns.roster) do
-            total = total + 1
-            if r.online then online = online + 1 end
-            local rec = ns.db.members[full]
-            if rec then
-                withAddon = withAddon + 1
-                if rec.bnetKey and not seen[rec.bnetKey] then seen[rec.bnetKey] = true; accounts = accounts + 1 end
-            end
-        end
-        local s = Stat("Karakterer", total) .. SEP .. Stat("Spillere", accounts) .. SEP
-            .. YELLOW .. "Pålogget|r " .. GREEN .. online .. "|r"
-            .. SEP .. Stat("Med addon", withAddon .. GREY .. "/" .. total .. "|r")
-        if currentTab == "profs" then s = s .. SEP .. GREY .. "Søk «alch» for å finne alle alchemists|r" end
-        return s
+    if currentTab == "overview" then
+        return ""   -- «Min tittel»-dropdownen ligger her nå
+    elseif currentTab == "profs" then
+        return GREY .. "Søk «alch» for å finne alle alchemists|r"
     elseif currentTab == "gold" or currentTab == "log" then
         local wIn, wOut = ns.BankFlow(ns.WeekStart())
         local bank = ns.db.bank
@@ -841,6 +837,22 @@ function UI:Create()
     self.guildText:SetShadowColor(1, 0.55, 0.05, 0.9)       -- varm glød
     self.guildText:SetShadowOffset(0, 0)
 
+    -- Guild-nivå + mini XP-bar under guild-navnet (synlig på alle faner)
+    self.guildLvl = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self.guildLvl:SetPoint("TOP", self.guildText, "BOTTOM", 0, 0)
+    self.guildLvl:SetTextColor(0.8, 0.7, 1)
+    local gxf = CreateFrame("Frame", nil, f, BACKDROP_TPL)
+    gxf:SetSize(190, 11)
+    gxf:SetPoint("TOP", self.guildLvl, "BOTTOM", 0, -1)
+    SetBD(gxf, "Interface\\Tooltips\\UI-Tooltip-Background", "Interface\\Tooltips\\UI-Tooltip-Border", 7, 2)
+    if gxf.SetBackdropColor then gxf:SetBackdropColor(0, 0, 0, 0.8); gxf:SetBackdropBorderColor(0.55, 0.4, 0.75, 1) end
+    local gxbar = CreateFrame("StatusBar", nil, gxf)
+    gxbar:SetPoint("TOPLEFT", 3, -3); gxbar:SetPoint("BOTTOMRIGHT", -3, 3)
+    gxbar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    gxbar:SetStatusBarColor(0.64, 0.19, 0.85)
+    gxbar:SetMinMaxValues(0, 1); gxbar:SetValue(0)
+    self.guildXpBar = gxbar
+
     local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", -6, -6)
 
@@ -1025,6 +1037,38 @@ function UI:Create()
     reset:SetScript("OnLeave", function() GameTooltip:Hide() end)
     self.resetBtn = reset
 
+    -- "Pålogget X" i footeren (der tittel-dropdownen pleide å stå)
+    self.onlineText = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    self.onlineText:SetPoint("LEFT", reset, "RIGHT", 16, 0)
+
+    -- Tittel-velger (din egen Battle.net-konto) – øverst på Medlemmer-fanen
+    local titleLbl = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    titleLbl:SetPoint("TOPLEFT", SIDE + 6, -58)
+    titleLbl:SetText("Min tittel:")
+    local drop = CreateFrame("Frame", "GuildKompassTitleDrop", f, "UIDropDownMenuTemplate")
+    drop:SetPoint("LEFT", titleLbl, "RIGHT", -6, -2)
+    UIDropDownMenu_SetWidth(drop, 130)
+    UIDropDownMenu_Initialize(drop, function(_, level)
+        local key = ns.AccountInfo and ns.AccountInfo()
+        local earned = (ns.GQ_EarnedTitles and key) and ns.GQ_EarnedTitles(key) or {}
+        local info = UIDropDownMenu_CreateInfo()
+        info.text = "(Ingen tittel)"; info.notCheckable = true
+        info.func = function() ns.GQ_SetMyTitle(""); UIDropDownMenu_SetText(drop, "(Ingen)") end
+        UIDropDownMenu_AddButton(info)
+        for _, t in ipairs(earned) do
+            local i2 = UIDropDownMenu_CreateInfo()
+            i2.text = t; i2.notCheckable = true
+            i2.func = function() ns.GQ_SetMyTitle(t); UIDropDownMenu_SetText(drop, t) end
+            UIDropDownMenu_AddButton(i2)
+        end
+        if #earned == 0 then
+            local i3 = UIDropDownMenu_CreateInfo()
+            i3.text = "Ingen titler ennå"; i3.disabled = true; i3.notCheckable = true
+            UIDropDownMenu_AddButton(i3)
+        end
+    end)
+    self.titleLbl, self.titleDrop = titleLbl, drop
+
     self.footer = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     self.footer:SetPoint("BOTTOMRIGHT", -SIDE - 6, 21)
 
@@ -1070,6 +1114,9 @@ function UI:Create()
     if ns.BuildRaidPanel then
         self.raidPanel = ns.BuildRaidPanel(f, self.inset)
     end
+    if ns.BuildQuestsPanel then
+        self.questsPanel = ns.BuildQuestsPanel(f, self.inset)
+    end
 
     f:Hide()
     self:SelectTab(1)
@@ -1094,10 +1141,42 @@ function UI:Update()
     local gname = GetGuildInfo("player")
     -- Små gylne ornamenter rundt navnet for litt ekstra piff
     self.guildText:SetText(gname and ("|cffb8860b•|r  " .. gname .. "  |cffb8860b•|r") or "")
-    self.resetBtn:SetShown(ns.IsOfficer(ns.PlayerName()) and currentTab ~= "events" and currentTab ~= "raid")
 
-    -- Events- og Raid-fanen: egne paneler, skjul den vanlige lista
-    if currentTab == "events" or currentTab == "raid" then
+    -- Guild-nivå + mini XP-bar under navnet
+    if self.guildXpBar and ns.GQ_GuildXP then
+        local lvl, into, need = ns.GQ_GuildXP()
+        self.guildLvl:SetText("|cffc0a0ffGuild nivå " .. lvl .. "|r |cff808080(" .. into .. "/" .. need .. " XP)|r")
+        self.guildXpBar:SetMinMaxValues(0, need > 0 and need or 1)
+        self.guildXpBar:SetValue(into)
+    end
+
+    self.resetBtn:SetShown(ns.IsOfficer(ns.PlayerName()) and currentTab ~= "events" and currentTab ~= "raid" and currentTab ~= "quests")
+
+    -- Tittel-velger bare på Medlemmer-fanen; vis gjeldende valg
+    if self.titleDrop then
+        local show = (currentTab == "overview")
+        self.titleLbl:SetShown(show)
+        self.titleDrop:SetShown(show)
+        if show then
+            local key = ns.AccountInfo and ns.AccountInfo()
+            local cur = (ns.GQ_AchTitleOf and key) and ns.GQ_AchTitleOf(key) or nil
+            UIDropDownMenu_SetText(self.titleDrop, cur or "(Ingen)")
+        end
+    end
+
+    -- "Pålogget X" i footeren på Medlemmer/Profesjoner
+    if self.onlineText then
+        local show = (currentTab == "overview" or currentTab == "profs")
+        self.onlineText:SetShown(show)
+        if show then
+            local on = 0
+            for _, r in pairs(ns.roster) do if r.online then on = on + 1 end end
+            self.onlineText:SetText(YELLOW .. "Pålogget|r " .. GREEN .. on .. "|r")
+        end
+    end
+
+    -- Events-, Raid- og Quests-fanene: egne paneler, skjul den vanlige lista
+    if currentTab == "events" or currentTab == "raid" or currentTab == "quests" then
         for c = 1, MAX_COLS do self.headers[c]:Hide() end
         for i = 1, NUM_ROWS do self.lines[i]:Hide() end
         self.slider:Hide()
@@ -1106,10 +1185,17 @@ function UI:Update()
             self.info:SetText(YELLOW .. "Death Roll|r " .. GREY .. "– lag event, spill 1v1 og turneringer|r")
             if ns.ShowEventsPanel then ns.ShowEventsPanel(true) end
             if ns.ShowRaidPanel then ns.ShowRaidPanel(false) end
-        else
+            if ns.ShowQuestsPanel then ns.ShowQuestsPanel(false) end
+        elseif currentTab == "raid" then
             self.info:SetText(YELLOW .. "Raid|r " .. GREY .. "– opprett raid, meld deg på med rolle, verten godkjenner|r")
             if ns.ShowRaidPanel then ns.ShowRaidPanel(true) end
             if ns.ShowEventsPanel then ns.ShowEventsPanel(false) end
+            if ns.ShowQuestsPanel then ns.ShowQuestsPanel(false) end
+        else
+            self.info:SetText(YELLOW .. "Guild Quests|r " .. GREY .. "– felles mål for guilden|r")
+            if ns.ShowQuestsPanel then ns.ShowQuestsPanel(true) end
+            if ns.ShowEventsPanel then ns.ShowEventsPanel(false) end
+            if ns.ShowRaidPanel then ns.ShowRaidPanel(false) end
         end
         local q = ns.QueueSize and ns.QueueSize() or 0
         self.footer:SetText((q > 0 and ("|cffffd100Sender data … (" .. q .. ")|r  ·  ") or "")
@@ -1118,6 +1204,7 @@ function UI:Update()
     else
         if ns.ShowEventsPanel then ns.ShowEventsPanel(false) end
         if ns.ShowRaidPanel then ns.ShowRaidPanel(false) end
+        if ns.ShowQuestsPanel then ns.ShowQuestsPanel(false) end
     end
 
     local cols = Columns(currentTab)

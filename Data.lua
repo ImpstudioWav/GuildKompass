@@ -1,6 +1,6 @@
 local ADDON, ns = ...
 
-ns.VERSION = "1.23.1"
+ns.VERSION = "1.25.0"
 ns.PREFIX  = "GKompass3"      -- maks 16 tegn (ny fra 1.11: navn uten realm)
 
 -- Raids som addonen kjenner til. (Skjult fra og med 1.4 – beholdt til senere.)
@@ -63,6 +63,8 @@ ns.PROFESSIONS = {
     ["Cooking"]        = "secondary",
     ["First Aid"]      = "secondary",
     ["Fishing"]        = "secondary",
+    ["Lockpicking"]    = "secondary",
+    ["Poisons"]        = "secondary",
 }
 
 function ns.FindRaid(instanceID, name)

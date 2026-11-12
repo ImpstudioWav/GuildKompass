@@ -666,7 +666,7 @@ Handlers.DROP = function(from, data)
     ns.duels[id] = { id = id, a = from, b = nil, amount = amount, start = start, max = start,
                      turn = from, state = "open", open = true, rolls = {},
                      created = GetTime(), lastAct = GetTime() }
-    if not ns.IsMe(from) and ns.global and ns.global.eventWarnings and ns.Anim and ns.Anim.Banner then
+    if not ns.IsMe(from) and not (ns.DRQuiet and ns.DRQuiet()) and ns.global and ns.global.eventWarnings and ns.Anim and ns.Anim.Banner then
         ns.Anim.Banner("ÅPEN 1v1!", ns.Short(from) .. " venter på motstander – åpne arenaen og bli med")
     end
     ns.DRRefresh()
@@ -834,6 +834,7 @@ end
 
 -- Varsel (banner) når noen lager en ny TURNERING: meld deg på.
 function ns.EventWarn(e)
+    if ns.DRQuiet and ns.DRQuiet() then return end
     if not ns.global.eventWarnings or not ns.Anim then return end
     if e.mode ~= "tournament" then return end     -- 1v1 varsles når selve kampen starter
     ns.Anim.Banner("DEATH ROLL-TURNERING!", "Meld deg på i guild-vinduet"
@@ -842,6 +843,7 @@ end
 
 -- Varsel (banner) når en 1v1-kamp starter: gå inn og se kampen mellom X og Y.
 function ns.SpectateWarn(d)
+    if ns.DRQuiet and ns.DRQuiet() then return end
     if not ns.global.eventWarnings or not ns.Anim then return end
     ns.Anim.Banner("DEATH ROLL!", "Gå inn og se kampen: " .. ns.Short(d.a) .. " mot " .. ns.Short(d.b))
 end
@@ -1571,7 +1573,14 @@ function ns.CheckEventReminders()
     if ns.CheckRaidReminders then ns.CheckRaidReminders() end
 end
 
+-- Stille-vindu rett etter innlogging: demp Death Roll-bannere/lyder mens
+-- gammel aktivitet synkes inn, så det ikke spretter opp i trynet.
+function ns.DRQuiet()
+    return ns.drLoginAt ~= nil and (GetTime() - ns.drLoginAt) < 15
+end
+
 function ns.DR_OnLogin()
+    ns.drLoginAt = GetTime()
     ns.EnsureDR()
     if ns.EnsureRaids then ns.EnsureRaids() end
     ns.DR_SendHello()
@@ -1581,4 +1590,5 @@ function ns.DR_OnLogin()
         ns.Anim.Banner("DEATH ROLL " .. DAYS[db.eventDay]:upper() .. "!", "Åpne guild-vinduet → Events")
     end
     if not ns.evTicker then ns.evTicker = C_Timer.NewTicker(30, ns.CheckEventReminders) end
+    if ns.GQ_OnLogin then ns.GQ_OnLogin() end
 end
