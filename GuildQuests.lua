@@ -748,6 +748,25 @@ function ns.GQ_AchHolder(achId)
     end
 end
 
+-- Account-nøkkelen til guildmaster (rankIndex 0). Det er bare én GM, og
+-- test-titler er forbeholdt den kontoen.
+local function gmAccountKey()
+    if not ns.db or not ns.db.members then return nil end
+    local gmFull
+    for full, r in pairs(ns.roster or {}) do
+        if r.rankIndex == 0 then gmFull = full; break end
+    end
+    if not gmFull then
+        for full, m in pairs(ns.db.members) do
+            if m.rankIndex == 0 then gmFull = full; break end
+        end
+    end
+    if not gmFull then return nil end
+    local rec = ns.db.members[gmFull]
+    return rec and rec.bnetKey or nil
+end
+ns.GQ_GMKey = gmAccountKey
+
 -- Titler en konto har oppnådd
 function ns.GQ_EarnedTitles(key)
     local out = {}
@@ -756,7 +775,10 @@ function ns.GQ_EarnedTitles(key)
         local h = ns.GQ_AchHolder(a.id)
         if h and h.key == key then out[#out + 1] = a.title end
     end
-    for _, t in ipairs(ns.GQ_TEST_TITLES or {}) do out[#out + 1] = t end
+    -- test-titler kan bare brukes/sees av guildmaster
+    if key == gmAccountKey() then
+        for _, t in ipairs(ns.GQ_TEST_TITLES or {}) do out[#out + 1] = t end
+    end
     return out
 end
 
