@@ -285,8 +285,11 @@ function ns.GQ_OnLogin()
         ns.GQ_SendHello()
         if ns.GQ_BroadcastClaims then ns.GQ_BroadcastClaims() end
         if ns.GQ_ScanMine then C_Timer.After(10, function() ns.GQ_ScanMine(false) end) end
+        -- roster-skann etter at medlems-synken har landet (gir guilden XP for
+        -- titler som er oppnådd, selv om earner ikke rakk å kringkaste et claim)
+        if ns.GQ_ScanRoster then C_Timer.After(22, function() ns.GQ_ScanRoster() end) end
         -- jevnlig sjekk som sikkerhetsnett (fanger skill-ups API-et ikke varsler om)
-        if not ns.gqAchTicker then ns.gqAchTicker = C_Timer.NewTicker(120, function() ns.GQ_ScanMine(true) end) end
+        if not ns.gqAchTicker then ns.gqAchTicker = C_Timer.NewTicker(120, function() ns.GQ_ScanMine(true); if ns.GQ_ScanRoster then ns.GQ_ScanRoster() end end) end
     end
     -- unngå nivå-banner ved innlogging: sett "sett-nivå" etter at sync har landet
     C_Timer.After(20, function() shownLevel = (ns.GQ_GuildXP()); gqReady = true end)
@@ -1014,6 +1017,57 @@ function ns.GQ_ScanMine(announce)
     -- (ingen «NY TITTEL»-varsel – tittelen dukker bare stille opp i dropdownen)
     if ns.RefreshUI then ns.RefreshUI() end
     if ns.UpdateQuestsPanel then ns.UpdateQuestsPanel() end
+end
+
+---------------------------------------------------------------------------
+-- Roster-skann: utled milepæl-krav fra synket medlemsdata (ikke bare egne).
+-- Fikser at guilden ikke fikk XP når en tittel ble oppnådd uten at et «claim»
+-- rakk å bli kringkastet (f.eks. yrke maxet før denne versjonen, eller earner
+-- aldri online samtidig). Låser rekkefølgen ved første oppdagelse: første som
+-- oppdages får tittelen, ingen andre – men guilden får XP for milepælen.
+---------------------------------------------------------------------------
+local function achMidPlaces(mid)
+    local n = 0
+    for _, a in ipairs(ACH) do if a.mid == mid then n = n + 1 end end
+    return n
+end
+function ns.GQ_ScanRoster()
+    local db = claimsDB()
+    if not db or not IsInGuild() or not ns.db or not ns.db.members then return end
+    local now = GetServerTime()
+    local changed = false
+    local function claimFor(mid, key, name)
+        local places = achMidPlaces(mid); if places == 0 then return false end
+        db.gqclaims[mid] = db.gqclaims[mid] or {}
+        if db.gqclaims[mid][key] then return false end        -- kontoen har den alt
+        local count = 0; for _ in pairs(db.gqclaims[mid]) do count = count + 1 end
+        if count >= places then return false end              -- alle plasser låst
+        db.gqclaims[mid][key] = { at = now, by = name or key, name = name or key }
+        return true
+    end
+    for full, m in pairs(ns.db.members) do
+        local key = m.bnetKey
+        if key then
+            local nm = (m.bnetName and m.bnetName ~= "" and m.bnetName) or full
+            if (m.level or 0) >= 60 then
+                if claimFor("lvl60", key, nm) then changed = true end
+            end
+            if type(m.profs) == "table" then
+                for _, p in ipairs(m.profs) do
+                    local pnm, cur = p[1], tonumber(p[2]) or 0
+                    if pnm == "Lock Picking" then pnm = "Lockpicking" end
+                    if pnm and cur >= PROF_MAX then
+                        if claimFor("prof:" .. pnm, key, nm) then changed = true end
+                    end
+                end
+            end
+        end
+    end
+    if changed then
+        ns.GQ_BroadcastClaims()
+        if ns.RefreshUI then ns.RefreshUI() end
+        if ns.UpdateQuestsPanel then ns.UpdateQuestsPanel() end
+    end
 end
 
 -- Hendelser som kan utløse ny milepæl
