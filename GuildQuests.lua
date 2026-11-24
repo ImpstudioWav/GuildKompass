@@ -747,6 +747,7 @@ local ACH = {
     { id = "pois",  mid = "prof:Poisons",      place = 1, title = "FarligSigg",         label = "Første til max Poisons",       xp = 150 },
     { id = "eng",   mid = "prof:Engineering",  place = 1, title = "Cobber Pipe Sigg",   label = "Første til max Engineering",   xp = 200 },
     { id = "lock",  mid = "prof:Lockpicking",  place = 1, title = "PikkSigg",           label = "Første til max Lockpicking",   xp = 150 },
+    { id = "epic2", mid = "epics2",            place = 1, title = "PurpleSigg",         label = "Første til 2 epics equippet",  xp = 150 },
 }
 ns.GQ_ACH = ACH
 
@@ -887,6 +888,20 @@ function ns.GQ_ProfLeader(prof)
     return best
 end
 
+-- Flest equippede epics (per Battle.net-konto)
+function ns.GQ_EpicLeader()
+    if not ns.db then return nil end
+    local best
+    for full, m in pairs(ns.db.members) do
+        local e = m.epics or 0
+        if e > 0 and (not best or e > best.epics) then
+            local nm = (m.bnetKey and accName(m.bnetKey)) or (ns.Short and ns.Short(full)) or full
+            best = { name = nm, epics = e }
+        end
+    end
+    return best
+end
+
 -- Leder-tekst for en prestasjon som ikke er vunnet ennå
 function ns.GQ_AchLeader(achId)
     for _, a in ipairs(ACH) do
@@ -894,6 +909,9 @@ function ns.GQ_AchLeader(achId)
             if a.mid == "lvl60" then
                 local who = ns.GQ_LevelRanking()[a.place]
                 if who and (who.level or 0) > 0 then return who.name .. " (lvl " .. who.level .. ")" end
+            elseif a.mid == "epics2" then
+                local l = ns.GQ_EpicLeader()
+                if l then return l.name .. " (" .. l.epics .. " epics)" end
             else
                 local prof = a.mid:match("^prof:(.+)$")
                 local l = prof and ns.GQ_ProfLeader(prof)
@@ -1013,6 +1031,10 @@ function ns.GQ_ScanMine(announce)
             if claim(a.mid) then changed = true end
         end
     end
+    if ns.CollectGear then
+        local ok, _, myEpics = pcall(ns.CollectGear)
+        if ok and (myEpics or 0) >= 2 then if claim("epics2") then changed = true end end
+    end
     if changed then ns.GQ_BroadcastClaims() end
     -- (ingen «NY TITTEL»-varsel – tittelen dukker bare stille opp i dropdownen)
     if ns.RefreshUI then ns.RefreshUI() end
@@ -1051,6 +1073,9 @@ function ns.GQ_ScanRoster()
             local nm = (m.bnetName and m.bnetName ~= "" and m.bnetName) or full
             if (m.level or 0) >= 60 then
                 if claimFor("lvl60", key, nm) then changed = true end
+            end
+            if (m.epics or 0) >= 2 then
+                if claimFor("epics2", key, nm) then changed = true end
             end
             if type(m.profs) == "table" then
                 for _, p in ipairs(m.profs) do
